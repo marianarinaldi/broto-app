@@ -1,22 +1,40 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
+import { useCallback, useState } from 'react';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import PlantCard from '../components/PlantCard';
 import ScreenContainer from '../components/ScreenContainer';
-
-const plants = [
-  { id: '1', name: 'Jiboia', species: 'Epipremnum aureum', nextCare: 'Hoje' },
-  { id: '2', name: 'Costela-de-adão', species: 'Monstera deliciosa', nextCare: 'Amanhã' },
-];
+import { getPlants } from '../services/plantService';
 
 export default function MyPlantsScreen({ navigation }) {
+  const [plants, setPlants] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  const loadPlants = useCallback(async () => {
+    setLoading(true);
+    setError('');
+    try {
+      setPlants(await getPlants());
+    } catch (loadError) {
+      setError('Não foi possível carregar suas plantas.');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useFocusEffect(useCallback(() => {
+    loadPlants();
+  }, [loadPlants]));
+
   return (
     <ScreenContainer>
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.heading}>
           <View>
             <Text style={styles.title}>Minhas plantas</Text>
-            <Text style={styles.subtitle}>2 plantas cadastradas</Text>
+            <Text style={styles.subtitle}>{plants.length} plantas cadastradas</Text>
           </View>
           <Pressable
             accessibilityRole="button"
@@ -29,7 +47,19 @@ export default function MyPlantsScreen({ navigation }) {
         </View>
 
         <Text style={styles.sectionTitle}>Sua coleção</Text>
-        {plants.map((plant) => (
+        {loading && <ActivityIndicator size="large" color="#2F6B45" style={styles.loader} />}
+        {!!error && (
+          <View style={styles.feedback}>
+            <Text style={styles.error}>{error}</Text>
+            <Pressable onPress={loadPlants}>
+              <Text style={styles.retry}>Tentar novamente</Text>
+            </Pressable>
+          </View>
+        )}
+        {!loading && !error && plants.length === 0 && (
+          <Text style={styles.empty}>Você ainda não cadastrou nenhuma planta.</Text>
+        )}
+        {!loading && !error && plants.map((plant) => (
           <PlantCard
             key={plant.id}
             plant={plant}
@@ -56,4 +86,9 @@ const styles = StyleSheet.create({
   },
   pressed: { opacity: 0.75 },
   sectionTitle: { color: '#183B25', fontSize: 18, fontWeight: '700', marginBottom: 12, marginTop: 30 },
+  loader: { marginTop: 32 },
+  feedback: { alignItems: 'center', paddingVertical: 24 },
+  error: { color: '#A33A3A', textAlign: 'center' },
+  retry: { color: '#2F6B45', fontWeight: '700', marginTop: 10 },
+  empty: { color: '#6E7D70', fontSize: 15, paddingVertical: 24, textAlign: 'center' },
 });
