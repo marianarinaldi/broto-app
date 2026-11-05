@@ -2,10 +2,9 @@ import {
   collection, 
   addDoc, 
   getDocs, 
-  doc, 
-  updateDoc, 
-  deleteDoc, 
-  serverTimestamp 
+  doc,
+  updateDoc,
+  serverTimestamp,
 } from 'firebase/firestore';
 import { db } from '../config/firebaseConfig';
 
