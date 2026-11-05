@@ -1,0 +1,60 @@
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+
+export default function PlantCard({ plant, onPress }) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`Abrir detalhes de ${plant.name}`}
+      onPress={onPress}
+      style={({ pressed }) => [styles.card, pressed && styles.pressed]}
+    >
+      <View style={styles.iconContainer}>
+        <MaterialCommunityIcons name="sprout" size={28} color="#2F6B45" />
+      </View>
+      <View style={styles.info}>
+        <Text style={styles.name}>{plant.name}</Text>
+        <Text style={styles.meta}>{plant.species}</Text>
+        <Text style={styles.meta}>Próximo cuidado: {plant.nextCare}</Text>
+      </View>
+      <MaterialCommunityIcons name="chevron-right" size={24} color="#7B8D7D" />
+    </Pressable>
+  );
+}
+
+const styles = StyleSheet.create({
+  card: {
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    flexDirection: 'row',
+    marginBottom: 12,
+    padding: 16,
+  },
+  pressed: {
+    opacity: 0.75,
+  },
+  iconContainer: {
+    alignItems: 'center',
+    backgroundColor: '#E4F1E5',
+    borderRadius: 12,
+    height: 56,
+    justifyContent: 'center',
+    marginRight: 12,
+    width: 56,
+  },
+  info: {
+    flex: 1,
+  },
+  name: {
+    color: '#183B25',
+    fontSize: 17,
+    fontWeight: '700',
+    marginBottom: 4,
+  },
+  meta: {
+    color: '#6E7D70',
+    fontSize: 13,
+    marginTop: 2,
+  },
+});
