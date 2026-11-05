@@ -4,6 +4,7 @@ import {
   getDocs, 
   doc,
   updateDoc,
+  deleteDoc,
   serverTimestamp,
 } from 'firebase/firestore';
 import { db } from '../config/firebaseConfig';
@@ -16,7 +17,7 @@ export const createPlant = async (plantData) => {
     const docRef = await addDoc(collection(db, PLANTS_COLLECTION), {
       ...plantData,
       createdAt: serverTimestamp(),
-      lastWateredDate: new Date().toISOString()
+      lastWateredDate: new Date().toISOString(),
     });
     return { id: docRef.id, ...plantData };
   } catch (error) {
@@ -49,6 +50,26 @@ export const updateWateringDate = async (plantId) => {
     });
   } catch (error) {
     console.error("Erro ao registrar rega: ", error);
+    throw error;
+  }
+};
+
+export const updatePlant = async (plantId, plantData) => {
+  try {
+    const plantRef = doc(db, PLANTS_COLLECTION, plantId);
+    await updateDoc(plantRef, plantData);
+    return { id: plantId, ...plantData };
+  } catch (error) {
+    console.error('Erro ao atualizar planta:', error);
+    throw error;
+  }
+};
+
+export const deletePlant = async (plantId) => {
+  try {
+    await deleteDoc(doc(db, PLANTS_COLLECTION, plantId));
+  } catch (error) {
+    console.error('Erro ao excluir planta:', error);
     throw error;
   }
 };
