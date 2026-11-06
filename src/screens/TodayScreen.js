@@ -2,8 +2,15 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import ScreenContainer from '../components/ScreenContainer';
+import { usePlants } from '../context/PlantsContext';
 
 export default function TodayScreen({ navigation }) {
+  const { plants, stats } = usePlants();
+  const needsCare = plants.filter((plant) => plant.nextCare === 'Hoje').length;
+  const summaryText = needsCare > 0
+    ? `${needsCare} planta${needsCare > 1 ? 's precisam' : ' precisa'} de cuidado hoje.`
+    : 'Nenhum cuidado pendente hoje. Continue sua sequência!';
+
   return (
     <ScreenContainer>
       <ScrollView contentContainerStyle={styles.content}>
@@ -16,9 +23,32 @@ export default function TodayScreen({ navigation }) {
             <MaterialCommunityIcons name="water-outline" size={28} color="#2F6B45" />
           </View>
           <View style={styles.summaryInfo}>
-            <Text style={styles.summaryTitle}>Tudo tranquilo por aqui</Text>
-            <Text style={styles.summaryText}>Você não tem cuidados pendentes hoje.</Text>
+            <Text style={styles.summaryTitle}>{needsCare > 0 ? 'Hora de cuidar!' : 'Tudo tranquilo por aqui'}</Text>
+            <Text style={styles.summaryText}>{summaryText}</Text>
           </View>
+        </View>
+
+        <View style={styles.statsRow}>
+          <View style={styles.statCard}>
+            <MaterialCommunityIcons name="fire" size={24} color="#E58A32" />
+            <Text style={styles.statValue}>{stats.streak}</Text>
+            <Text style={styles.statLabel}>dias seguidos</Text>
+          </View>
+          <View style={styles.statCard}>
+            <MaterialCommunityIcons name="star-four-points-outline" size={24} color="#D29A22" />
+            <Text style={styles.statValue}>{stats.points}</Text>
+            <Text style={styles.statLabel}>pontos</Text>
+          </View>
+        </View>
+
+        <Text style={styles.sectionTitle}>Suas conquistas</Text>
+        <View style={styles.medalsCard}>
+          <MaterialCommunityIcons name="medal-outline" size={28} color="#D29A22" />
+          <Text style={styles.medalsText}>
+            {stats.medals.length > 0
+              ? `${stats.medals.length} medalha${stats.medals.length > 1 ? 's' : ''} conquistada${stats.medals.length > 1 ? 's' : ''}!`
+              : 'Regue uma planta para conquistar sua primeira medalha.'}
+          </Text>
         </View>
 
         <Text style={styles.sectionTitle}>Acesso rápido</Text>
@@ -71,4 +101,10 @@ const styles = StyleSheet.create({
   },
   actionText: { color: '#183B25', flex: 1, fontSize: 15, fontWeight: '600', marginLeft: 12 },
   pressed: { opacity: 0.75 },
+  statsRow: { flexDirection: 'row', gap: 12, marginTop: 18 },
+  statCard: { backgroundColor: '#FFFFFF', borderRadius: 16, flex: 1, padding: 16 },
+  statValue: { color: '#183B25', fontSize: 24, fontWeight: '700', marginTop: 8 },
+  statLabel: { color: '#6E7D70', fontSize: 12, marginTop: 2 },
+  medalsCard: { alignItems: 'center', backgroundColor: '#FFF8E7', borderRadius: 16, flexDirection: 'row', padding: 16 },
+  medalsText: { color: '#725C2A', flex: 1, fontSize: 14, lineHeight: 20, marginLeft: 12 },
 });
