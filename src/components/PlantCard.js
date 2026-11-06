@@ -10,18 +10,22 @@ export default function PlantCard({ plant, onPress }) {
       style={({ pressed }) => [styles.card, pressed && styles.pressed]}
     >
       {plant.imageUri ? (
-        <Image source={{ uri: plant.imageUri }} style={styles.image} />
+        <Image
+          accessible={false}
+          source={{ uri: plant.imageUri }}
+          style={styles.image}
+        />
       ) : (
         <View style={styles.iconContainer}>
-          <MaterialCommunityIcons name="sprout" size={28} color="#2F6B45" />
+          <MaterialCommunityIcons accessible={false} name="sprout" size={28} color="#2F6B45" />
         </View>
       )}
-      <View style={styles.info}>
+      <View accessible={false} style={styles.info}>
         <Text style={styles.name}>{plant.name}</Text>
         <Text style={styles.meta}>{plant.species}</Text>
         <Text style={styles.meta}>Próximo cuidado: {plant.nextCare}</Text>
       </View>
-      <MaterialCommunityIcons name="chevron-right" size={24} color="#7B8D7D" />
+      <MaterialCommunityIcons accessible={false} name="chevron-right" size={24} color="#7B8D7D" />
     </Pressable>
   );
 }
