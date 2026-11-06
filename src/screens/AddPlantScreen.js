@@ -114,7 +114,11 @@ export default function AddPlantScreen({ navigation, route }) {
       } else {
         await createPlant(data);
       }
-      navigation.goBack();
+      Alert.alert(
+        plant ? "Planta atualizada!" : "Planta cadastrada!",
+        `${data.name} agora faz parte do seu jardim.`,
+        [{ text: "Continuar", onPress: () => navigation.goBack() }],
+      );
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       schedulePlantReminder({ plantName: data.name, date: nextCareDate }).catch((notificationError) => {
         console.warn("Não foi possível agendar o lembrete:", notificationError);
@@ -136,27 +140,31 @@ export default function AddPlantScreen({ navigation, route }) {
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.icon}>
-            <MaterialCommunityIcons name="flower" size={44} color="#2F6B45" />
+            <MaterialCommunityIcons accessible={false} name="flower" size={44} color="#2F6B45" />
           </View>
           <View style={styles.photoActions}>
             <Pressable
               accessibilityRole="button"
+              accessibilityLabel={imageUri ? "Trocar foto pela galeria" : "Adicionar foto pela galeria"}
+              accessibilityHint="Abre a galeria de fotos do aparelho"
               onPress={handlePickImage}
               style={({ pressed }) => [styles.photoButton, pressed && styles.pressed]}
             >
-              <MaterialCommunityIcons name="image-outline" size={20} color="#2F6B45" />
-              <Text style={styles.photoButtonText}>Galeria</Text>
+              <MaterialCommunityIcons accessible={false} name="image-outline" size={20} color="#2F6B45" />
+              <Text accessible={false} style={styles.photoButtonText}>Galeria</Text>
             </Pressable>
             <Pressable
               accessibilityRole="button"
+              accessibilityLabel={imageUri ? "Trocar foto pela câmera" : "Tirar foto da planta"}
+              accessibilityHint="Abre a câmera do aparelho"
               onPress={handleTakePhoto}
               style={({ pressed }) => [styles.photoButton, pressed && styles.pressed]}
             >
-              <MaterialCommunityIcons name="camera-outline" size={20} color="#2F6B45" />
-              <Text style={styles.photoButtonText}>Câmera</Text>
+              <MaterialCommunityIcons accessible={false} name="camera-outline" size={20} color="#2F6B45" />
+              <Text accessible={false} style={styles.photoButtonText}>Câmera</Text>
             </Pressable>
           </View>
-          <Text style={styles.title}>
+          <Text accessibilityRole="header" style={styles.title}>
             {plant ? "Editar planta" : "Adicionar planta"}
           </Text>
           <Text style={styles.description}>
@@ -165,6 +173,8 @@ export default function AddPlantScreen({ navigation, route }) {
 
           <Text style={styles.label}>Nome da planta *</Text>
           <TextInput
+            accessibilityLabel="Nome da planta, campo obrigatório"
+            accessibilityHint="Digite o nome pelo qual você identifica a planta"
             autoCapitalize="words"
             maxLength={50}
             onChangeText={(value) => {
@@ -176,10 +186,16 @@ export default function AddPlantScreen({ navigation, route }) {
             style={[styles.input, errors.name && styles.inputError]}
             value={name}
           />
-          {!!errors.name && <Text style={styles.error}>{errors.name}</Text>}
+          {!!errors.name && (
+            <Text accessibilityLiveRegion="polite" accessibilityRole="alert" style={styles.error}>
+              {errors.name}
+            </Text>
+          )}
 
           <Text style={styles.label}>Espécie *</Text>
           <TextInput
+            accessibilityLabel="Espécie da planta, campo obrigatório"
+            accessibilityHint="Digite a espécie ou nome científico da planta"
             autoCapitalize="words"
             maxLength={80}
             onChangeText={(value) => {
@@ -192,11 +208,13 @@ export default function AddPlantScreen({ navigation, route }) {
             value={species}
           />
           {!!errors.species && (
-            <Text style={styles.error}>{errors.species}</Text>
+            <Text accessibilityLiveRegion="polite" accessibilityRole="alert" style={styles.error}>{errors.species}</Text>
           )}
 
           <Text style={styles.label}>Frequência de rega *</Text>
           <TextInput
+            accessibilityLabel="Frequência de rega em dias, campo obrigatório"
+            accessibilityHint="Digite quantos dias devem passar entre as regas"
             keyboardType="number-pad"
             maxLength={3}
             onChangeText={(value) => {
@@ -212,21 +230,24 @@ export default function AddPlantScreen({ navigation, route }) {
             ]}
             value={wateringFrequency}
           />
-          <Text style={styles.helper}>
+          <Text accessible={false} style={styles.helper}>
             Informe a quantidade de dias entre cada rega.
           </Text>
           {!!errors.wateringFrequency && (
-            <Text style={styles.error}>{errors.wateringFrequency}</Text>
+            <Text accessibilityLiveRegion="polite" accessibilityRole="alert" style={styles.error}>{errors.wateringFrequency}</Text>
           )}
 
           <Text style={styles.label}>Próximo cuidado *</Text>
           <Pressable
             accessibilityRole="button"
+            accessibilityLabel={`Próximo cuidado: ${formatDate(nextCareDate)}`}
+            accessibilityHint="Abre o seletor de data"
             onPress={() => setShowDatePicker(true)}
             style={styles.dateInput}
           >
-            <Text style={styles.dateText}>{formatDate(nextCareDate)}</Text>
+            <Text accessible={false} style={styles.dateText}>{formatDate(nextCareDate)}</Text>
             <MaterialCommunityIcons
+              accessible={false}
               name="calendar-month-outline"
               size={22}
               color="#2F6B45"
@@ -246,13 +267,15 @@ export default function AddPlantScreen({ navigation, route }) {
 
           <Pressable
             accessibilityRole="button"
+            accessibilityLabel={plant ? "Salvar alterações da planta" : "Salvar nova planta"}
+            accessibilityHint="Valida os campos e salva os dados da planta"
             accessibilityState={{ disabled: operationLoading }}
             disabled={operationLoading}
             onPress={handleSave}
             style={({ pressed }) => [styles.button, pressed && styles.pressed]}
           >
             {operationLoading ? (
-              <ActivityIndicator color="#FFFFFF" />
+              <ActivityIndicator accessible={false} color="#FFFFFF" />
             ) : (
               <Text style={styles.buttonText}>Salvar planta</Text>
             )}

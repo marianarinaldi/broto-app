@@ -5,28 +5,11 @@ import {
   updateDoc,
   deleteDoc,
   doc,
-  getDoc,
-  runTransaction,
   serverTimestamp,
 } from 'firebase/firestore';
 import { db } from '../config/firebaseConfig';
 
 const PLANTS_COLLECTION = 'plants';
-const STATS_DOCUMENT = 'appStats/global';
-
-const getDateKey = (date = new Date()) => date.toISOString().slice(0, 10);
-
-const getYesterdayKey = (date = new Date()) => {
-  const yesterday = new Date(date);
-  yesterday.setDate(yesterday.getDate() - 1);
-  return getDateKey(yesterday);
-};
-
-const calculateMedals = (points, streak, totalWaterings) => [
-  ...(totalWaterings >= 1 ? ['primeira-rega'] : []),
-  ...(streak >= 3 ? ['constancia'] : []),
-  ...(points >= 100 ? ['jardineira-dedicada'] : []),
-];
 
 // 1. Cadastrar nova planta
 export const createPlant = async (plantData) => {
@@ -62,75 +45,13 @@ export const getPlants = async () => {
 export const updateWateringDate = async (plantId) => {
   try {
     const plantRef = doc(db, PLANTS_COLLECTION, plantId);
-    const statsRef = doc(db, STATS_DOCUMENT);
-    const now = new Date();
-    const todayKey = getDateKey(now);
-
-    return runTransaction(db, async (transaction) => {
-      const [plantSnapshot, statsSnapshot] = await Promise.all([
-        transaction.get(plantRef),
-        transaction.get(statsRef),
-      ]);
-
-      if (!plantSnapshot.exists()) {
-        throw new Error('Planta não encontrada.');
-      }
-
-      const previousStats = statsSnapshot.data() ?? {};
-      const alreadyWateredToday =
-        previousStats.lastActivityDate === todayKey;
-      const currentStreak = alreadyWateredToday
-        ? previousStats.streak ?? 1
-        : previousStats.lastActivityDate === getYesterdayKey(now)
-          ? (previousStats.streak ?? 0) + 1
-          : 1;
-      const totalWaterings = alreadyWateredToday
-        ? previousStats.totalWaterings ?? 0
-        : (previousStats.totalWaterings ?? 0) + 1;
-      const points = alreadyWateredToday
-        ? previousStats.points ?? 0
-        : (previousStats.points ?? 0) + 10;
-
-      transaction.update(plantRef, { lastWateredDate: now.toISOString() });
-      transaction.set(
-        statsRef,
-        {
-          points,
-          streak: currentStreak,
-          bestStreak: Math.max(previousStats.bestStreak ?? 0, currentStreak),
-          totalWaterings,
-          lastActivityDate: todayKey,
-          medals: calculateMedals(points, currentStreak, totalWaterings),
-        },
-        { merge: true },
-      );
-
-      return {
-        lastWateredDate: now.toISOString(),
-        stats: {
-          points,
-          streak: currentStreak,
-          bestStreak: Math.max(previousStats.bestStreak ?? 0, currentStreak),
-          totalWaterings,
-          medals: calculateMedals(points, currentStreak, totalWaterings),
-        },
-      };
-    });
+    const lastWateredDate = new Date().toISOString();
+    await updateDoc(plantRef, { lastWateredDate });
+    return { lastWateredDate };
   } catch (error) {
     console.error("Erro ao registrar rega: ", error);
     throw error;
   }
-};
-
-export const getPlantStats = async () => {
-  const statsSnapshot = await getDoc(doc(db, STATS_DOCUMENT));
-  return statsSnapshot.data() ?? {
-    points: 0,
-    streak: 0,
-    bestStreak: 0,
-    totalWaterings: 0,
-    medals: [],
-  };
 };
 
 export const updatePlant = async (plantId, plantData) => {

@@ -4,7 +4,6 @@ import {
   createPlant as createPlantService,
   deletePlant as deletePlantService,
   getPlants,
-  getPlantStats,
   updatePlant as updatePlantService,
   updateWateringDate as updateWateringDateService,
 } from '../services/plantService';
@@ -16,21 +15,13 @@ export function PlantsProvider({ children }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [operationLoading, setOperationLoading] = useState(false);
-  const [stats, setStats] = useState({
-    points: 0,
-    streak: 0,
-    bestStreak: 0,
-    totalWaterings: 0,
-    medals: [],
-  });
 
   const loadPlants = useCallback(async () => {
     setLoading(true);
     setError('');
     try {
-      const [loadedPlants, loadedStats] = await Promise.all([getPlants(), getPlantStats()]);
+      const loadedPlants = await getPlants();
       setPlants(loadedPlants);
-      setStats(loadedStats);
       return loadedPlants;
     } catch (loadError) {
       setError('Não foi possível carregar suas plantas.');
@@ -80,14 +71,14 @@ export function PlantsProvider({ children }) {
     setOperationLoading(true);
     setError('');
     try {
-      const lastWateredDate = new Date().toISOString();
       const result = await updateWateringDateService(plantId);
       setPlants((currentPlants) =>
         currentPlants.map((plant) =>
-          plant.id === plantId ? { ...plant, lastWateredDate } : plant,
+          plant.id === plantId
+            ? { ...plant, lastWateredDate: result.lastWateredDate }
+            : plant,
         ),
       );
-      setStats((currentStats) => ({ ...currentStats, ...result.stats }));
     } catch (wateringError) {
       setError('Não foi possível registrar a rega.');
       throw wateringError;
@@ -113,7 +104,6 @@ export function PlantsProvider({ children }) {
   const value = useMemo(
     () => ({
       plants,
-      stats,
       loading,
       error,
       operationLoading,
@@ -125,7 +115,6 @@ export function PlantsProvider({ children }) {
     }),
     [
       plants,
-      stats,
       loading,
       error,
       operationLoading,
