@@ -1,5 +1,5 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 
 export default function PlantCard({ plant, onPress }) {
   return (
@@ -9,9 +9,13 @@ export default function PlantCard({ plant, onPress }) {
       onPress={onPress}
       style={({ pressed }) => [styles.card, pressed && styles.pressed]}
     >
-      <View style={styles.iconContainer}>
-        <MaterialCommunityIcons name="sprout" size={28} color="#2F6B45" />
-      </View>
+      {plant.imageUri ? (
+        <Image source={{ uri: plant.imageUri }} style={styles.image} />
+      ) : (
+        <View style={styles.iconContainer}>
+          <MaterialCommunityIcons name="sprout" size={28} color="#2F6B45" />
+        </View>
+      )}
       <View style={styles.info}>
         <Text style={styles.name}>{plant.name}</Text>
         <Text style={styles.meta}>{plant.species}</Text>
@@ -40,6 +44,12 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     height: 56,
     justifyContent: 'center',
+    marginRight: 12,
+    width: 56,
+  },
+  image: {
+    borderRadius: 12,
+    height: 56,
     marginRight: 12,
     width: 56,
   },

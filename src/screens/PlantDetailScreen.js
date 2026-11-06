@@ -1,8 +1,11 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import * as Haptics from 'expo-haptics';
+import { ActivityIndicator, Alert, Animated, Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useRef } from 'react';
 
 import ScreenContainer from '../components/ScreenContainer';
 import { usePlants } from '../context/PlantsContext';
+import { getPlantMood } from '../utils/plantMood';
 
 export default function PlantDetailScreen({ navigation, route }) {
   const plant = route.params?.plant ?? {
@@ -11,10 +14,17 @@ export default function PlantDetailScreen({ navigation, route }) {
     nextCare: 'Não definido',
   };
   const { deletePlant, updateWateringDate, operationLoading } = usePlants();
+  const mood = getPlantMood(plant);
+  const scale = useRef(new Animated.Value(1)).current;
 
   const handleWatering = async () => {
     try {
       await updateWateringDate(plant.id);
+      Animated.sequence([
+        Animated.spring(scale, { toValue: 1.18, useNativeDriver: true }),
+        Animated.spring(scale, { toValue: 1, useNativeDriver: true }),
+      ]).start();
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       Alert.alert('Regada!', 'A data da rega foi atualizada.');
     } catch (error) {
       Alert.alert('Erro', 'Não foi possível registrar a rega.');
@@ -43,10 +53,23 @@ export default function PlantDetailScreen({ navigation, route }) {
     <ScreenContainer>
       <View style={styles.content}>
         <View style={styles.hero}>
-          <MaterialCommunityIcons name="sprout" size={72} color="#2F6B45" />
+          {plant.imageUri ? (
+            <Image source={{ uri: plant.imageUri }} style={styles.heroImage} />
+          ) : (
+            <Animated.View style={{ transform: [{ scale }] }}>
+              <MaterialCommunityIcons name="sprout" size={72} color="#2F6B45" />
+            </Animated.View>
+          )}
         </View>
         <Text style={styles.name}>{plant.name}</Text>
         <Text style={styles.species}>{plant.species}</Text>
+        <View style={styles.mood}>
+          <MaterialCommunityIcons name={mood.icon} size={22} color="#2F6B45" />
+          <View style={styles.moodInfo}>
+            <Text style={styles.moodLabel}>{mood.label}</Text>
+            <Text style={styles.moodMessage}>{mood.message}</Text>
+          </View>
+        </View>
 
         <View style={styles.infoCard}>
           <Text style={styles.label}>Próximo cuidado</Text>
@@ -69,8 +92,13 @@ export default function PlantDetailScreen({ navigation, route }) {
 const styles = StyleSheet.create({
   content: { padding: 24 },
   hero: { alignItems: 'center', backgroundColor: '#E4F1E5', borderRadius: 24, height: 190, justifyContent: 'center' },
+  heroImage: { borderRadius: 24, height: '100%', width: '100%' },
   name: { color: '#183B25', fontSize: 26, fontWeight: '700', marginTop: 24, textAlign: 'center' },
   species: { color: '#6E7D70', fontSize: 15, marginTop: 6, textAlign: 'center' },
+  mood: { alignItems: 'center', backgroundColor: '#E4F1E5', borderRadius: 16, flexDirection: 'row', marginTop: 18, padding: 14 },
+  moodInfo: { flex: 1, marginLeft: 10 },
+  moodLabel: { color: '#183B25', fontSize: 15, fontWeight: '700' },
+  moodMessage: { color: '#52705A', fontSize: 13, lineHeight: 18, marginTop: 3 },
   infoCard: { backgroundColor: '#FFFFFF', borderRadius: 16, marginTop: 28, padding: 18 },
   label: { color: '#6E7D70', fontSize: 13 },
   value: { color: '#2F6B45', fontSize: 18, fontWeight: '700', marginTop: 6 },

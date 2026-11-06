@@ -1,5 +1,7 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import DateTimePicker from "@react-native-community/datetimepicker";
+import * as Haptics from "expo-haptics";
+import * as ImagePicker from "expo-image-picker";
 import { useState } from "react";
 import {
   ActivityIndicator,
@@ -16,22 +18,74 @@ import {
 
 import ScreenContainer from "../components/ScreenContainer";
 import { usePlants } from "../context/PlantsContext";
+import { schedulePlantReminder } from "../services/notificationService";
 
 export default function AddPlantScreen({ navigation, route }) {
   const plant = route.params?.plant;
   const { createPlant, updatePlant, operationLoading } = usePlants();
+  const defaultCareDate = new Date();
+  defaultCareDate.setDate(defaultCareDate.getDate() + 1);
+  defaultCareDate.setHours(9, 0, 0, 0);
   const [name, setName] = useState(plant?.name ?? "");
   const [species, setSpecies] = useState(plant?.species ?? "");
   const [wateringFrequency, setWateringFrequency] = useState(
     plant?.wateringFrequency ? String(plant.wateringFrequency) : "",
   );
   const [nextCareDate, setNextCareDate] = useState(
-    plant?.nextCareDate ? new Date(plant.nextCareDate) : new Date(),
+    plant?.nextCareDate ? new Date(plant.nextCareDate) : defaultCareDate,
   );
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [imageUri, setImageUri] = useState(plant?.imageUri ?? null);
   const [errors, setErrors] = useState({});
 
   const formatDate = (date) => date.toLocaleDateString("pt-BR");
+
+  const handlePickImage = async () => {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert(
+        "Permissão necessária",
+        "Permita o acesso à galeria para adicionar uma foto da planta.",
+      );
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      allowsEditing: true,
+      aspect: [1, 1],
+      exif: false,
+      mediaTypes: ["images"],
+      quality: 0.5,
+    });
+
+    if (!result.canceled) {
+      setImageUri(result.assets[0].uri);
+      Haptics.selectionAsync();
+    }
+  };
+
+  const handleTakePhoto = async () => {
+    const permission = await ImagePicker.requestCameraPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert(
+        "Permissão necessária",
+        "Permita o acesso à câmera para fotografar sua planta.",
+      );
+      return;
+    }
+
+    const result = await ImagePicker.launchCameraAsync({
+      allowsEditing: true,
+      aspect: [1, 1],
+      exif: false,
+      quality: 0.5,
+    });
+
+    if (!result.canceled) {
+      setImageUri(result.assets[0].uri);
+      Haptics.selectionAsync();
+    }
+  };
 
   const handleSave = async () => {
     const nextErrors = {};
@@ -53,6 +107,7 @@ export default function AddPlantScreen({ navigation, route }) {
         wateringFrequency: wateringFrequency.trim(),
         nextCare: formatDate(nextCareDate),
         nextCareDate: nextCareDate.toISOString(),
+        imageUri,
       };
       if (plant?.id) {
         await updatePlant(plant.id, data);
@@ -60,6 +115,10 @@ export default function AddPlantScreen({ navigation, route }) {
         await createPlant(data);
       }
       navigation.goBack();
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      schedulePlantReminder({ plantName: data.name, date: nextCareDate }).catch((notificationError) => {
+        console.warn("Não foi possível agendar o lembrete:", notificationError);
+      });
     } catch (error) {
       Alert.alert("Erro", "Não foi possível salvar a planta. Tente novamente.");
     }
@@ -77,11 +136,25 @@ export default function AddPlantScreen({ navigation, route }) {
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.icon}>
-            <MaterialCommunityIcons
-              name="flower"
-              size={44}
-              color="#2F6B45"
-            />
+            <MaterialCommunityIcons name="flower" size={44} color="#2F6B45" />
+          </View>
+          <View style={styles.photoActions}>
+            <Pressable
+              accessibilityRole="button"
+              onPress={handlePickImage}
+              style={({ pressed }) => [styles.photoButton, pressed && styles.pressed]}
+            >
+              <MaterialCommunityIcons name="image-outline" size={20} color="#2F6B45" />
+              <Text style={styles.photoButtonText}>Galeria</Text>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              onPress={handleTakePhoto}
+              style={({ pressed }) => [styles.photoButton, pressed && styles.pressed]}
+            >
+              <MaterialCommunityIcons name="camera-outline" size={20} color="#2F6B45" />
+              <Text style={styles.photoButtonText}>Câmera</Text>
+            </Pressable>
           </View>
           <Text style={styles.title}>
             {plant ? "Editar planta" : "Adicionar planta"}
@@ -201,6 +274,20 @@ const styles = StyleSheet.create({
     height: 80,
     justifyContent: "center",
     width: 80,
+  },
+  photoButton: {
+    alignItems: "center",
+    alignSelf: "center",
+    flexDirection: "row",
+    marginTop: 12,
+    padding: 8,
+  },
+  photoActions: { alignSelf: "center", flexDirection: "row", gap: 12, marginTop: 4 },
+  photoButtonText: {
+    color: "#2F6B45",
+    fontSize: 14,
+    fontWeight: "600",
+    marginLeft: 8,
   },
   title: {
     color: "#183B25",
