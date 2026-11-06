@@ -1,28 +1,14 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
-import { useCallback, useState } from 'react';
+import { useCallback } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import PlantCard from '../components/PlantCard';
 import ScreenContainer from '../components/ScreenContainer';
-import { getPlants } from '../services/plantService';
+import { usePlants } from '../context/PlantsContext';
 
 export default function MyPlantsScreen({ navigation }) {
-  const [plants, setPlants] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-
-  const loadPlants = useCallback(async () => {
-    setLoading(true);
-    setError('');
-    try {
-      setPlants(await getPlants());
-    } catch (loadError) {
-      setError('Não foi possível carregar suas plantas.');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const { plants, loading, error, loadPlants } = usePlants();
 
   useFocusEffect(useCallback(() => {
     loadPlants();

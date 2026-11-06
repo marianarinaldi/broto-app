@@ -1,9 +1,8 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import ScreenContainer from '../components/ScreenContainer';
-import { deletePlant, updateWateringDate } from '../services/plantService';
+import { usePlants } from '../context/PlantsContext';
 
 export default function PlantDetailScreen({ navigation, route }) {
   const plant = route.params?.plant ?? {
@@ -11,17 +10,14 @@ export default function PlantDetailScreen({ navigation, route }) {
     species: 'Espécie não informada',
     nextCare: 'Não definido',
   };
-  const [saving, setSaving] = useState(false);
+  const { deletePlant, updateWateringDate, operationLoading } = usePlants();
 
   const handleWatering = async () => {
-    setSaving(true);
     try {
       await updateWateringDate(plant.id);
       Alert.alert('Regada!', 'A data da rega foi atualizada.');
     } catch (error) {
       Alert.alert('Erro', 'Não foi possível registrar a rega.');
-    } finally {
-      setSaving(false);
     }
   };
 
@@ -56,8 +52,8 @@ export default function PlantDetailScreen({ navigation, route }) {
           <Text style={styles.label}>Próximo cuidado</Text>
           <Text style={styles.value}>{plant.nextCare}</Text>
         </View>
-        <Pressable onPress={handleWatering} disabled={saving} style={styles.primaryButton}>
-          {saving ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.buttonText}>Registrar rega</Text>}
+        <Pressable onPress={handleWatering} disabled={operationLoading} style={styles.primaryButton}>
+          {operationLoading ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.buttonText}>Registrar rega</Text>}
         </Pressable>
         <Pressable onPress={() => navigation.navigate('Adicionar planta', { plant })} style={styles.secondaryButton}>
           <Text style={styles.secondaryText}>Editar planta</Text>
