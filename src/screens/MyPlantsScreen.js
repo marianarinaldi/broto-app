@@ -1,7 +1,7 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { useCallback } from 'react';
-import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import EmptyPlantsState from '../components/EmptyPlantsState';
 import FeedbackState from '../components/FeedbackState';
@@ -11,7 +11,16 @@ import ScreenContainer from '../components/ScreenContainer';
 import { usePlants } from '../context/PlantsContext';
 
 export default function MyPlantsScreen({ navigation }) {
-  const { plants, loading, error, loadPlants } = usePlants();
+  const { plants, loading, error, loadPlants, updateWateringDate } = usePlants();
+
+  const handleWater = async (plant) => {
+    try {
+      await updateWateringDate(plant.id);
+      Alert.alert('Cuidado registrado', `${plant.name} recebeu água. 🌿`);
+    } catch (waterError) {
+      Alert.alert('Não foi possível registrar', 'Tente novamente em alguns instantes.');
+    }
+  };
 
   useFocusEffect(useCallback(() => {
     loadPlants();
@@ -50,6 +59,7 @@ export default function MyPlantsScreen({ navigation }) {
             key={plant.id}
             plant={plant}
             onPress={() => navigation.navigate('Detalhes da planta', { plant })}
+            onWater={() => handleWater(plant)}
           />
         ))}
       </ScrollView>

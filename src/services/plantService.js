@@ -5,11 +5,20 @@ import {
   updateDoc,
   deleteDoc,
   doc,
+  getDoc,
   serverTimestamp,
 } from 'firebase/firestore';
 import { db } from '../config/firebaseConfig';
 
 const PLANTS_COLLECTION = 'plants';
+
+const getNextCareDate = (wateringFrequency) => {
+  const days = Number.parseInt(wateringFrequency, 10);
+  const nextDate = new Date();
+  nextDate.setDate(nextDate.getDate() + (Number.isFinite(days) && days > 0 ? days : 1));
+  nextDate.setHours(9, 0, 0, 0);
+  return nextDate;
+};
 
 // 1. Cadastrar nova planta
 export const createPlant = async (plantData) => {
@@ -46,8 +55,19 @@ export const updateWateringDate = async (plantId) => {
   try {
     const plantRef = doc(db, PLANTS_COLLECTION, plantId);
     const lastWateredDate = new Date().toISOString();
-    await updateDoc(plantRef, { lastWateredDate });
-    return { lastWateredDate };
+    const plantSnapshot = await getDoc(plantRef);
+    if (!plantSnapshot.exists()) {
+      throw new Error('Planta não encontrada.');
+    }
+
+    const nextCareDate = getNextCareDate(plantSnapshot.data().wateringFrequency);
+    const nextCare = nextCareDate.toLocaleDateString('pt-BR');
+    await updateDoc(plantRef, {
+      lastWateredDate,
+      nextCareDate: nextCareDate.toISOString(),
+      nextCare,
+    });
+    return { lastWateredDate, nextCareDate: nextCareDate.toISOString(), nextCare };
   } catch (error) {
     console.error("Erro ao registrar rega: ", error);
     throw error;

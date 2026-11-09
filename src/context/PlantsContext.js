@@ -75,7 +75,7 @@ export function PlantsProvider({ children }) {
       setPlants((currentPlants) =>
         currentPlants.map((plant) =>
           plant.id === plantId
-            ? { ...plant, lastWateredDate: result.lastWateredDate }
+            ? { ...plant, ...result }
             : plant,
         ),
       );

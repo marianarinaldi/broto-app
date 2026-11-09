@@ -14,6 +14,7 @@ import {
   Text,
   TextInput,
   View,
+  Image,
 } from "react-native";
 
 import ScreenContainer from "../components/ScreenContainer";
@@ -37,6 +38,7 @@ export default function AddPlantScreen({ navigation, route }) {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [imageUri, setImageUri] = useState(plant?.imageUri ?? null);
   const [errors, setErrors] = useState({});
+  const [step, setStep] = useState(plant ? 2 : 1);
 
   const formatDate = (date) => date.toLocaleDateString("pt-BR");
 
@@ -87,6 +89,18 @@ export default function AddPlantScreen({ navigation, route }) {
     }
   };
 
+  const handleNext = () => {
+    const nextErrors = {};
+    if (!name.trim()) nextErrors.name = "Informe o nome da planta.";
+    if (!species.trim()) nextErrors.species = "Informe a espécie da planta.";
+    if (Object.keys(nextErrors).length > 0) {
+      setErrors(nextErrors);
+      return;
+    }
+    setErrors({});
+    setStep(2);
+  };
+
   const handleSave = async () => {
     const nextErrors = {};
     if (!name.trim()) nextErrors.name = "Informe o nome da planta.";
@@ -109,6 +123,7 @@ export default function AddPlantScreen({ navigation, route }) {
         nextCareDate: nextCareDate.toISOString(),
         imageUri,
       };
+
       if (plant?.id) {
         await updatePlant(plant.id, data);
       } else {
@@ -140,7 +155,11 @@ export default function AddPlantScreen({ navigation, route }) {
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.icon}>
-            <MaterialCommunityIcons accessible={false} name="flower" size={44} color="#2F6B45" />
+            {imageUri ? (
+              <Image accessible={false} source={{ uri: imageUri }} style={styles.previewImage} />
+            ) : (
+              <MaterialCommunityIcons accessible={false} name="flower" size={44} color="#2F6B45" />
+            )}
           </View>
           <View style={styles.photoActions}>
             <Pressable
@@ -167,10 +186,15 @@ export default function AddPlantScreen({ navigation, route }) {
           <Text accessibilityRole="header" style={styles.title}>
             {plant ? "Editar planta" : "Adicionar planta"}
           </Text>
+          <View accessibilityLabel={`Etapa ${step} de 2`} style={styles.progress}>
+            <View style={[styles.progressStep, step >= 1 && styles.progressActive]} />
+            <View style={[styles.progressStep, step >= 2 && styles.progressActive]} />
+          </View>
           <Text style={styles.description}>
-            Preencha os dados abaixo para acompanhar os cuidados da sua planta.
+            {step === 1 ? "Vamos conhecer sua planta." : "Agora defina a rotina de cuidados."}
           </Text>
 
+          <View style={step === 2 && styles.hidden}>
           <Text style={styles.label}>Nome da planta *</Text>
           <TextInput
             accessibilityLabel="Nome da planta, campo obrigatório"
@@ -210,7 +234,10 @@ export default function AddPlantScreen({ navigation, route }) {
           {!!errors.species && (
             <Text accessibilityLiveRegion="polite" accessibilityRole="alert" style={styles.error}>{errors.species}</Text>
           )}
+          </View>
 
+          <View style={step === 1 && styles.hidden}>
+          <Text style={styles.stepLabel}>2. Rotina de cuidados</Text>
           <Text style={styles.label}>Frequência de rega *</Text>
           <TextInput
             accessibilityLabel="Frequência de rega em dias, campo obrigatório"
@@ -264,22 +291,47 @@ export default function AddPlantScreen({ navigation, route }) {
               value={nextCareDate}
             />
           )}
+          </View>
 
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={plant ? "Salvar alterações da planta" : "Salvar nova planta"}
-            accessibilityHint="Valida os campos e salva os dados da planta"
-            accessibilityState={{ disabled: operationLoading }}
-            disabled={operationLoading}
-            onPress={handleSave}
-            style={({ pressed }) => [styles.button, pressed && styles.pressed]}
-          >
-            {operationLoading ? (
-              <ActivityIndicator accessible={false} color="#FFFFFF" />
-            ) : (
-              <Text style={styles.buttonText}>Salvar planta</Text>
-            )}
-          </Pressable>
+          {step === 1 ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Continuar para rotina de cuidados"
+              onPress={handleNext}
+              style={({ pressed }) => [styles.button, pressed && styles.pressed]}
+            >
+              <Text style={styles.buttonText}>Continuar</Text>
+              <MaterialCommunityIcons accessible={false} name="arrow-right" size={20} color="#FFFFFF" />
+            </Pressable>
+          ) : (
+            <View style={styles.buttonRow}>
+              {!plant && (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Voltar para os dados da planta"
+                  onPress={() => setStep(1)}
+                  style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}
+                >
+                  <MaterialCommunityIcons accessible={false} name="arrow-left" size={20} color="#2F6B45" />
+                </Pressable>
+              )}
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={plant ? "Salvar alterações da planta" : "Salvar nova planta"}
+                accessibilityHint="Valida os campos e salva os dados da planta"
+                accessibilityState={{ disabled: operationLoading }}
+                disabled={operationLoading}
+                onPress={handleSave}
+                style={({ pressed }) => [styles.button, styles.saveButton, pressed && styles.pressed]}
+              >
+                {operationLoading ? (
+                  <ActivityIndicator accessible={false} color="#FFFFFF" />
+                ) : (
+                  <Text style={styles.buttonText}>{plant ? "Salvar alterações" : "Salvar planta"}</Text>
+                )}
+              </Pressable>
+            </View>
+          )}
         </ScrollView>
       </KeyboardAvoidingView>
     </ScreenContainer>
@@ -298,6 +350,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     width: 80,
   },
+  previewImage: { borderRadius: 24, height: "100%", width: "100%" },
   photoButton: {
     alignItems: "center",
     alignSelf: "center",
@@ -319,6 +372,11 @@ const styles = StyleSheet.create({
     marginTop: 16,
     textAlign: "center",
   },
+  progress: { flexDirection: "row", gap: 6, justifyContent: "center", marginTop: 16 },
+  progressStep: { backgroundColor: "#D8E5D9", borderRadius: 4, height: 6, width: 42 },
+  progressActive: { backgroundColor: "#2F6B45" },
+  stepLabel: { color: "#183B25", fontSize: 18, fontWeight: "700", marginBottom: 8, marginTop: 8 },
+  hidden: { display: "none" },
   description: {
     color: "#6E7D70",
     fontSize: 14,
@@ -358,12 +416,19 @@ const styles = StyleSheet.create({
   },
   dateText: { color: "#183B25", fontSize: 15 },
   button: {
+    alignItems: "center",
     backgroundColor: "#2F6B45",
     borderRadius: 14,
+    flexDirection: "row",
+    justifyContent: "center",
     marginTop: 28,
+    minHeight: 56,
     paddingHorizontal: 20,
     paddingVertical: 14,
   },
+  buttonRow: { alignItems: "center", flexDirection: "row", gap: 10 },
+  saveButton: { flex: 1 },
+  backButton: { alignItems: "center", borderColor: "#2F6B45", borderRadius: 14, borderWidth: 1, height: 56, justifyContent: "center", width: 56 },
   buttonText: { color: "#FFFFFF", fontSize: 15, fontWeight: "700" },
   pressed: { opacity: 0.75 },
 });

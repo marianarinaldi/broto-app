@@ -1,8 +1,9 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import ScreenContainer from '../components/ScreenContainer';
 import { usePlants } from '../context/PlantsContext';
+import { getPlantCareStatus } from '../utils/plantCare';
 import { getPlantMood } from '../utils/plantMood';
 
 const isDueToday = (plant) => {
@@ -11,7 +12,7 @@ const isDueToday = (plant) => {
 };
 
 export default function TodayScreen({ navigation }) {
-  const { plants } = usePlants();
+  const { plants, updateWateringDate } = usePlants();
   const plantsToCare = plants.filter(isDueToday);
   const firstName = 'jardineiro';
   const today = new Intl.DateTimeFormat('pt-BR', {
@@ -19,6 +20,15 @@ export default function TodayScreen({ navigation }) {
     day: 'numeric',
     month: 'long',
   }).format(new Date());
+
+  const handleWater = async (plant) => {
+    try {
+      await updateWateringDate(plant.id);
+      Alert.alert('Cuidado registrado', `${plant.name} recebeu água. 🌿`);
+    } catch (waterError) {
+      Alert.alert('Não foi possível registrar', 'Tente novamente em alguns instantes.');
+    }
+  };
 
   return (
     <ScreenContainer>
@@ -89,21 +99,34 @@ export default function TodayScreen({ navigation }) {
             </View>
             {plants.slice(0, 3).map((plant) => {
               const mood = getPlantMood(plant);
+              const care = getPlantCareStatus(plant);
               return (
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={`Abrir ${plant.name}. ${mood.label}. Próximo cuidado: ${plant.nextCare}`}
-                  key={plant.id}
-                  onPress={() => navigation.navigate('Detalhes da planta', { plant })}
-                  style={({ pressed }) => [styles.plantRow, pressed && styles.pressed]}
-                >
-                  <View style={styles.plantIcon}><MaterialCommunityIcons accessible={false} name="sprout" size={25} color="#2F6B45" /></View>
-                  <View style={styles.plantCopy}>
-                    <Text style={styles.plantName}>{plant.name}</Text>
-                    <Text style={styles.plantStatus}>{mood.label} · {plant.nextCare}</Text>
-                  </View>
-                  <MaterialCommunityIcons accessible={false} name="chevron-right" size={22} color="#91A398" />
-                </Pressable>
+                <View key={plant.id} style={styles.plantRow}>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={`Abrir ${plant.name}. ${mood.label}. ${care.label}`}
+                    onPress={() => navigation.navigate('Detalhes da planta', { plant })}
+                    style={({ pressed }) => [styles.plantMain, pressed && styles.pressed]}
+                  >
+                    <View style={styles.plantIcon}><MaterialCommunityIcons accessible={false} name="sprout" size={25} color="#2F6B45" /></View>
+                    <View style={styles.plantCopy}>
+                      <Text style={styles.plantName}>{plant.name}</Text>
+                      <Text style={styles.plantStatus}>{mood.label} · {care.label}</Text>
+                    </View>
+                    <MaterialCommunityIcons accessible={false} name="chevron-right" size={22} color="#91A398" />
+                  </Pressable>
+                  {(care.tone === 'warning' || care.tone === 'danger') && (
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={`Regar ${plant.name} agora`}
+                      onPress={() => handleWater(plant)}
+                      style={({ pressed }) => [styles.waterButton, pressed && styles.pressed]}
+                    >
+                      <MaterialCommunityIcons accessible={false} name="water" size={18} color="#FFFFFF" />
+                      <Text style={styles.waterText}>Regar</Text>
+                    </Pressable>
+                  )}
+                </View>
               );
             })}
           </>
@@ -139,10 +162,13 @@ const styles = StyleSheet.create({
   sectionTitle: { color: '#173A28', fontSize: 19, fontWeight: '800' },
   sectionCount: { color: '#789080', fontSize: 13 },
   seeAll: { color: '#2F6B45', fontSize: 14, fontWeight: '700' },
-  plantRow: { alignItems: 'center', backgroundColor: '#FFFFFF', borderRadius: 17, flexDirection: 'row', marginBottom: 10, minHeight: 72, padding: 12 },
+  plantRow: { backgroundColor: '#FFFFFF', borderRadius: 17, marginBottom: 10, overflow: 'hidden' },
+  plantMain: { alignItems: 'center', flexDirection: 'row', minHeight: 72, padding: 12 },
   plantIcon: { alignItems: 'center', backgroundColor: '#E4F1E5', borderRadius: 13, height: 48, justifyContent: 'center', width: 48 },
   plantCopy: { flex: 1, marginLeft: 12 },
   plantName: { color: '#173A28', fontSize: 16, fontWeight: '800' },
   plantStatus: { color: '#718378', fontSize: 13, marginTop: 4 },
+  waterButton: { alignItems: 'center', backgroundColor: '#2D86A2', flexDirection: 'row', justifyContent: 'center', minHeight: 44 },
+  waterText: { color: '#FFFFFF', fontSize: 14, fontWeight: '800', marginLeft: 6 },
   pressed: { opacity: 0.78 },
 });
