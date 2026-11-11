@@ -77,6 +77,16 @@ export default function TodayScreen({ navigation }) {
             </View>
             <MaterialCommunityIcons accessible={false} name="chevron-right" size={23} color="#2F6B45" />
           </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Abrir guia de cuidados"
+            onPress={() => navigation.navigate('Guia de cuidados')}
+            style={({ pressed }) => [styles.guideAction, pressed && styles.pressed]}
+          >
+            <MaterialCommunityIcons accessible={false} name="book-open-page-variant-outline" size={23} color="#2F6B45" />
+            <Text style={styles.guideText}>Consultar guia de cuidados</Text>
+            <MaterialCommunityIcons accessible={false} name="chevron-right" size={23} color="#7B8D7D" />
+          </Pressable>
         </View>
 
         {plants.length > 0 && (
@@ -131,6 +141,8 @@ const styles = StyleSheet.create({
   waterIcon: { bottom: 40, position: 'absolute', right: 3 },
   quickActions: { marginTop: 16 },
   addAction: { alignItems: 'center', backgroundColor: '#FFFFFF', borderColor: '#DDEBE0', borderRadius: 18, borderWidth: 1, flexDirection: 'row', minHeight: 76, padding: 12 },
+  guideAction: { alignItems: 'center', backgroundColor: '#FFF8E7', borderRadius: 18, flexDirection: 'row', marginTop: 10, minHeight: 60, paddingHorizontal: 16 },
+  guideText: { color: '#725C2A', flex: 1, fontSize: 15, fontWeight: '700', marginLeft: 10 },
   actionIcon: { alignItems: 'center', backgroundColor: '#2F6B45', borderRadius: 14, height: 50, justifyContent: 'center', width: 50 },
   actionCopy: { flex: 1, marginLeft: 13 },
   actionTitle: { color: '#173A28', fontSize: 16, fontWeight: '800' },

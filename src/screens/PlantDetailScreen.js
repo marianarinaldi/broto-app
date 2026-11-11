@@ -1,21 +1,22 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { ActivityIndicator, Alert, Animated, Image, Pressable, StyleSheet, Text, View } from 'react-native';
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 
 import ScreenContainer from '../components/ScreenContainer';
 import { usePlants } from '../context/PlantsContext';
 import { getPlantMood } from '../utils/plantMood';
 
 export default function PlantDetailScreen({ navigation, route }) {
-  const plant = route.params?.plant ?? {
+  const routePlant = route.params?.plant ?? {
     name: 'Minha planta',
     species: 'Espécie não informada',
     nextCare: 'Não definido',
   };
-  const { deletePlant, updateWateringDate, operationLoading } = usePlants();
+  const { plants, deletePlant, updateWateringDate, operationLoading } = usePlants();
+  const plant = plants.find((item) => item.id === routePlant.id) ?? routePlant;
   const mood = getPlantMood(plant);
-  const scale = useRef(new Animated.Value(1)).current;
+  const [scale] = useState(() => new Animated.Value(1));
   const [successMessage, setSuccessMessage] = useState('');
 
   const handleWatering = async () => {
@@ -27,7 +28,7 @@ export default function PlantDetailScreen({ navigation, route }) {
       ]).start();
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setSuccessMessage('Rega registrada! Sua planta agradece. 🌿');
-    } catch (error) {
+    } catch {
       Alert.alert('Erro', 'Não foi possível registrar a rega.');
     }
   };
@@ -42,7 +43,7 @@ export default function PlantDetailScreen({ navigation, route }) {
           try {
             await deletePlant(plant.id);
             navigation.goBack();
-          } catch (error) {
+          } catch {
             Alert.alert('Erro', 'Não foi possível excluir a planta.');
           }
         },
@@ -108,7 +109,7 @@ export default function PlantDetailScreen({ navigation, route }) {
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={`Registrar rega de ${plant.name}`}
-          accessibilityHint="Atualiza a data da última rega e sua pontuação"
+          accessibilityHint="Atualiza a data da última rega e calcula o próximo cuidado"
           accessibilityState={{ busy: operationLoading, disabled: operationLoading }}
           onPress={handleWatering}
           disabled={operationLoading}

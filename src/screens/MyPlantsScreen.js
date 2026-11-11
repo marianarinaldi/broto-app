@@ -40,6 +40,15 @@ export default function MyPlantsScreen({ navigation }) {
         </View>
 
         <Text style={styles.sectionTitle}>Sua coleção</Text>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Abrir guia de cuidados"
+          onPress={() => navigation.navigate('Guia de cuidados')}
+          style={({ pressed }) => [styles.guideButton, pressed && styles.pressed]}
+        >
+          <MaterialCommunityIcons accessible={false} name="book-open-page-variant-outline" size={20} color="#2F6B45" />
+          <Text style={styles.guideText}>Guia de cuidados por espécie</Text>
+        </Pressable>
         {loading && <LoadingState />}
         {!!error && <FeedbackState onRetry={loadPlants} />}
         {!loading && !error && plants.length === 0 && (
@@ -72,4 +81,6 @@ const styles = StyleSheet.create({
   },
   pressed: { opacity: 0.75 },
   sectionTitle: { color: '#183B25', fontSize: 18, fontWeight: '700', marginBottom: 12, marginTop: 30 },
+  guideButton: { alignItems: 'center', backgroundColor: '#FFF8E7', borderRadius: 14, flexDirection: 'row', marginBottom: 14, minHeight: 52, paddingHorizontal: 15 },
+  guideText: { color: '#725C2A', fontSize: 14, fontWeight: '700', marginLeft: 8 },
 });

@@ -1,32 +1,49 @@
-import { 
-  collection, 
-  addDoc, 
-  getDocs, 
-  updateDoc,
+import {
+  addDoc,
+  collection,
   deleteDoc,
   doc,
+  getDoc,
+  getDocs,
   serverTimestamp,
+  updateDoc,
 } from 'firebase/firestore';
 import { db } from '../config/firebaseConfig';
+import { calculateNextCareDate } from '../utils/watering';
 
 const PLANTS_COLLECTION = 'plants';
 
-// 1. Cadastrar nova planta
+function formatDate(date) {
+  return date.toLocaleDateString('pt-BR');
+}
+
 export const createPlant = async (plantData) => {
   try {
+    const lastWateredDate = new Date().toISOString();
+    const requestedNextCareDate = plantData.nextCareDate ? new Date(plantData.nextCareDate) : null;
+    const nextCareDate = requestedNextCareDate && !Number.isNaN(requestedNextCareDate.getTime())
+      ? requestedNextCareDate
+      : calculateNextCareDate(lastWateredDate, plantData.wateringFrequency);
     const docRef = await addDoc(collection(db, PLANTS_COLLECTION), {
       ...plantData,
       createdAt: serverTimestamp(),
-      lastWateredDate: new Date().toISOString(),
+      lastWateredDate,
+      nextCareDate: nextCareDate.toISOString(),
+      nextCare: formatDate(nextCareDate),
     });
-    return { id: docRef.id, ...plantData };
+    return {
+      id: docRef.id,
+      ...plantData,
+      lastWateredDate,
+      nextCareDate: nextCareDate.toISOString(),
+      nextCare: formatDate(nextCareDate),
+    };
   } catch (error) {
     console.error("Erro ao criar planta: ", error);
     throw error;
   }
 };
 
-// 2. Buscar todas as plantas
 export const getPlants = async () => {
   try {
     const querySnapshot = await getDocs(collection(db, PLANTS_COLLECTION));
@@ -41,13 +58,20 @@ export const getPlants = async () => {
   }
 };
 
-// 3. Atualizar data de rega
 export const updateWateringDate = async (plantId) => {
   try {
     const plantRef = doc(db, PLANTS_COLLECTION, plantId);
     const lastWateredDate = new Date().toISOString();
-    await updateDoc(plantRef, { lastWateredDate });
-    return { lastWateredDate };
+    const snapshot = await getDoc(plantRef);
+    const plant = snapshot.data();
+    const nextCareDate = calculateNextCareDate(lastWateredDate, plant?.wateringFrequency);
+    const updatedFields = {
+      lastWateredDate,
+      nextCareDate: nextCareDate.toISOString(),
+      nextCare: formatDate(nextCareDate),
+    };
+    await updateDoc(plantRef, updatedFields);
+    return updatedFields;
   } catch (error) {
     console.error("Erro ao registrar rega: ", error);
     throw error;

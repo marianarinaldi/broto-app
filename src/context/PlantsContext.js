@@ -23,7 +23,7 @@ export function PlantsProvider({ children }) {
       const loadedPlants = await getPlants();
       setPlants(loadedPlants);
       return loadedPlants;
-    } catch (loadError) {
+    } catch {
       setError('Não foi possível carregar suas plantas.');
       return [];
     } finally {
@@ -32,6 +32,8 @@ export function PlantsProvider({ children }) {
   }, []);
 
   useEffect(() => {
+    // This effect synchronizes the global store with the remote Firestore source.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadPlants();
   }, [loadPlants]);
 
@@ -75,10 +77,11 @@ export function PlantsProvider({ children }) {
       setPlants((currentPlants) =>
         currentPlants.map((plant) =>
           plant.id === plantId
-            ? { ...plant, lastWateredDate: result.lastWateredDate }
+            ? { ...plant, ...result }
             : plant,
         ),
       );
+      return result;
     } catch (wateringError) {
       setError('Não foi possível registrar a rega.');
       throw wateringError;
