@@ -48,7 +48,10 @@ export default function CatalogSpeciesScreen({ navigation, route }) {
           text: 'Continuar',
           onPress: () => {
             if (route.params?.returnToPlantForm) {
-              navigation.navigate('Adicionar planta', { createdCatalogPlant: savedPlant });
+              navigation.navigate('Adicionar planta', {
+                createdCatalogPlant: savedPlant,
+                returnToMyPlants: true,
+              });
             } else {
               navigation.goBack();
             }
@@ -65,6 +68,15 @@ export default function CatalogSpeciesScreen({ navigation, route }) {
   return (
     <ScreenContainer>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Voltar para o cadastro da planta"
+          onPress={() => navigation.goBack()}
+          style={styles.backButton}
+        >
+          <MaterialCommunityIcons name="arrow-left" size={20} color="#2F6B45" />
+          <Text style={styles.backText}>Voltar</Text>
+        </Pressable>
         <MaterialCommunityIcons name="sprout" size={48} color="#2F6B45" />
         <Text accessibilityRole="header" style={styles.title}>{existingPlant ? 'Editar espécie' : 'Cadastrar espécie'}</Text>
         <Text style={styles.description}>Crie uma recomendação para reutilizar no cadastro de plantas.</Text>
@@ -120,6 +132,8 @@ export default function CatalogSpeciesScreen({ navigation, route }) {
 
 const styles = StyleSheet.create({
   content: { padding: 24, paddingBottom: 48 },
+  backButton: { alignItems: 'center', alignSelf: 'flex-start', flexDirection: 'row', marginBottom: 10, paddingVertical: 8 },
+  backText: { color: '#2F6B45', fontSize: 14, fontWeight: '700', marginLeft: 6 },
   title: { color: '#183B25', fontSize: 28, fontWeight: '800', marginTop: 14 },
   description: { color: '#718378', fontSize: 15, lineHeight: 21, marginBottom: 14, marginTop: 6 },
   input: { backgroundColor: '#FFFFFF', borderColor: '#D8E5D9', borderRadius: 12, borderWidth: 1, color: '#183B25', fontSize: 15, marginTop: 10, padding: 14 },

@@ -28,6 +28,7 @@ import { useFocusEffect } from "@react-navigation/native";
 export default function AddPlantScreen({ navigation, route }) {
   const plant = route.params?.plant;
   const catalogPlant = route.params?.catalogPlant;
+  const returnToMyPlants = route.params?.returnToMyPlants === true;
   const { createPlant, updatePlant, operationLoading } = usePlants();
   const defaultCareDate = new Date();
   defaultCareDate.setDate(defaultCareDate.getDate() + 1);
@@ -173,7 +174,16 @@ export default function AddPlantScreen({ navigation, route }) {
       Alert.alert(
         plant ? "Planta atualizada!" : "Planta cadastrada!",
         `${data.name} agora faz parte do seu jardim.`,
-        [{ text: "Continuar", onPress: () => navigation.goBack() }],
+        [{
+          text: "Continuar",
+          onPress: () => {
+            if (returnToMyPlants) {
+              navigation.navigate("Principal", { screen: "Minhas plantas" });
+            } else {
+              navigation.goBack();
+            }
+          },
+        }],
       );
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       schedulePlantReminder({ plantName: data.name, date: nextCareDate }).catch((notificationError) => {
