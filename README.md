@@ -1,99 +1,165 @@
 # Broto
 
-Aplicativo mobile para organizar os cuidados com plantas. O usuário cadastra
-suas plantas, define a frequência de rega, agenda lembretes, registra os
-cuidados e consulta um catálogo com recomendações de luz, ambiente, rega e
-adubação.
+Aplicativo mobile para organização dos cuidados com plantas. O usuário pode
+cadastrar suas plantas, consultar recomendações por espécie, registrar regas e
+acompanhar a próxima data de cuidado.
+
+Este projeto foi desenvolvido para a disciplina de **Dispositivos Móveis**.
+
+## Integrantes
+
+| Integrante          | Responsabilidades                       |
+| ------------------- | --------------------------------------- |
+| **Mariana Rinaldi** | Navegação, telas e estrutura            |
+| **Mariana Rinaldi** | Firebase e operações CRUD               |
+| **Mariana Rinaldi** | Formulários e experiência do usuário    |
+| **Mariana Rinaldi** | Recursos nativos, testes e documentação |
 
 ## Funcionalidades
 
 - Cadastro, edição e exclusão de plantas.
-- Um único campo de nome/espécie, com seleção no catálogo ou cadastro manual.
-- Seleção de espécie pelo catálogo ou cadastro de espécie personalizada.
-- Preenchimento automático de frequência de rega, luz e ambiente.
-- Registro de rega com atualização imediata do próximo cuidado.
-- Foto da planta pela câmera ou galeria.
+- Seleção de espécie por catálogo ou cadastro de uma nova espécie.
+- Preenchimento automático de cuidados conforme a espécie escolhida.
+- Registro de rega com atualização imediata da próxima rega.
+- Status de cuidado: atrasada, regar hoje, regar amanhã ou próxima rega.
+- Guia de cuidados com busca, filtros e detalhes por espécie.
+- Inclusão de foto pela galeria ou câmera.
 - Lembretes locais de cuidados.
-- Guia de cuidados com pesquisa, filtros e fallback local.
-- CRUD de espécies personalizadas no catálogo remoto.
-- Estados de carregamento, erro, vazio, sucesso e confirmação de exclusão.
-- Interface acessível com labels, hints, feedback para leitor de tela e alvos
-  de toque confortáveis.
+- Feedback visual de carregamento, erro, sucesso e estado vazio.
+- Confirmação antes de operações destrutivas.
+- Interface acessível com labels, hints e alvos de toque adequados.
 
 ## Tecnologias
 
 - React Native com Expo SDK 58.
-- React Navigation: Native Stack + Bottom Tabs.
+- React Navigation com Native Stack e Bottom Tabs.
 - Context API para estado global.
 - Firebase Firestore para persistência NoSQL.
-- Expo Image Picker, Notifications, Haptics e DateTimePicker.
-- `@expo/vector-icons`.
-- Jest e React Native Testing Library.
+- Expo Image Picker para câmera e galeria.
+- Expo Notifications para lembretes locais.
+- Expo Haptics para feedback tátil.
+- `@expo/vector-icons` para ícones.
+- Jest e React Native Testing Library para testes.
+
+## Requisitos atendidos
+
+### Arquitetura, layout e UX
+
+- Código organizado em componentes, telas, serviços, contexto, constantes e
+  utilitários.
+- Componentes reutilizáveis para cards, botões de rega, status, seleção de
+  espécies e estados de feedback.
+- Layout responsivo utilizando Flexbox.
+- Feedbacks visuais para carregamento, erro, sucesso e ausência de dados.
+
+### Navegação
+
+- Native Stack integrado ao Bottom Tabs.
+- Abas principais: **Hoje** e **Minhas plantas**.
+- Fluxos de detalhes, cadastro, edição, guia de cuidados e cadastro de
+  espécies.
+
+### Estado e formulários
+
+- Context API para compartilhamento das plantas entre as telas.
+- `useState`, `useEffect`, `useMemo` e `useCallback` para estados e eventos.
+- Formulário com validação dos campos obrigatórios.
+- Seletores, inputs, calendário e feedback de validação.
+
+### Recursos nativos
+
+- Câmera e galeria para fotos das plantas.
+- Notificações locais para lembretes.
+- Haptics para confirmação de ações.
+- DateTimePicker para escolha de datas.
+- Ícones vetoriais com `@expo/vector-icons`.
+
+### Firebase e persistência
+
+- Firestore para leitura, criação, edição e remoção de plantas.
+- Firestore para o catálogo de espécies.
+- CRUD de espécies personalizadas.
+- Atualização de `lastWateredDate`, `nextCareDate` e `nextCare` após a rega.
+
+### Git Flow
+
+- `main`: versão estável.
+- `develop`: integração das funcionalidades.
+- `feature/nome-da-funcionalidade`: desenvolvimento de cada recurso.
+- Uso de Pull Requests e revisão antes do merge em `develop`.
 
 ## Estrutura do projeto
 
 ```text
 src/
-├── assets/       # Ícones e imagens do aplicativo
 ├── components/   # Componentes visuais reutilizáveis
 ├── config/       # Configuração do Firebase
-├── constants/    # Catálogo local e valores fixos
+├── constants/    # Tema e catálogo local
 ├── context/      # Estado global das plantas
-├── navigation/   # Stack e Bottom Tabs
+├── navigation/   # Native Stack e Bottom Tabs
 ├── screens/      # Telas do aplicativo
-├── services/     # Firestore, catálogo e notificações
-├── utils/        # Regras e funções de domínio
-└── __tests__/    # Testes unitários
+├── services/     # Firestore e notificações
+├── utils/        # Regras de negócio e datas
+└── __tests__/    # Testes automatizados
 ```
 
 ## Pré-requisitos
 
 - Node.js LTS.
 - npm.
-- Android Studio com Android SDK e um emulador configurado, ou um aparelho
+- Android Studio com Android SDK e emulador configurado, ou dispositivo
   Android com depuração USB.
-- Java/JDK 17 para gerar uma Development Build Android.
+- JDK 17 para gerar a Development Build Android.
 
-## Instalação e execução
+## Instalação
 
 ```bash
 git clone https://github.com/marianarinaldi/broto-app.git
 cd broto-app
 npm install
-npx expo start
 ```
 
-Para usar o Expo Go:
+### Executar com Expo Go
 
 ```bash
 npx expo start --go
 ```
 
-Para usar a Development Build, necessária para validar os módulos nativos:
+### Executar com Development Build
+
+A Development Build é recomendada para testar câmera, notificações e outros
+recursos nativos:
 
 ```bash
 npx expo run:android
 npx expo start --dev-client
 ```
 
-Antes de executar no Android, confirme:
+Verifique se o dispositivo foi reconhecido:
 
 ```bash
 adb devices
 java -version
 ```
 
-O dispositivo deve aparecer como `device`, e não `offline`.
+## Configuração do Firebase
 
-## Firebase e Firestore
+1. Crie ou acesse um projeto no [Firebase Console](https://console.firebase.google.com/).
+2. Crie um aplicativo Web no projeto.
+3. Ative o **Cloud Firestore**.
+4. Copie a configuração do aplicativo Web.
+5. Atualize os valores em
+   [`src/config/firebaseConfig.js`](./src/config/firebaseConfig.js).
 
-O projeto usa o Firebase Web SDK. A configuração de teste está em
-[`src/config/firebaseConfig.js`](./src/config/firebaseConfig.js). Para outro
-projeto Firebase, substitua os valores da configuração pelo aplicativo Web
-correspondente e habilite o Firestore.
+O aplicativo utiliza as coleções:
 
-As regras versionadas estão em [`firestore.rules`](./firestore.rules). Para
-aplicá-las usando a Firebase CLI:
+- `plants`: plantas cadastradas pelo usuário.
+- `plant_catalog`: catálogo de espécies e espécies personalizadas.
+
+### Regras do Firestore
+
+As regras estão no arquivo [`firestore.rules`](./firestore.rules). Para
+publicá-las usando a Firebase CLI:
 
 ```bash
 firebase login
@@ -101,139 +167,85 @@ firebase use SEU_PROJECT_ID
 firebase deploy --only firestore:rules
 ```
 
-O app usa as coleções:
+As regras atuais são destinadas à demonstração acadêmica. Antes de uma
+publicação comercial, implemente Firebase Authentication, associe cada
+documento a um `userId` e restrinja o acesso por usuário.
 
-- `plants`: plantas cadastradas e seus cuidados;
-- `plant_catalog`: catálogo remoto de espécies.
+## Catálogo de espécies
 
-### Atualização do próximo cuidado
+O catálogo possui uma fonte local em
+[`src/constants/plantCatalogData.js`](./src/constants/plantCatalogData.js).
+Quando o Firestore está vazio, o aplicativo realiza o seed do catálogo padrão.
+Se o Firestore estiver indisponível, a fonte local é utilizada como fallback.
 
-Ao registrar uma rega, o serviço grava no mesmo documento:
+O usuário pode:
 
-- `lastWateredDate`;
-- `nextCareDate`;
-- `nextCare`.
-
-`nextCareDate` é calculado somando `wateringFrequency` à data atual. O
-`PlantsContext` mescla os três valores no estado global e a tela de detalhes
-consome a planta atualizada, sem depender de reiniciar ou trocar de aba.
-
-### Catálogo resiliente
-
-[`src/constants/plantCatalogData.js`](./src/constants/plantCatalogData.js) é a
-fonte local versionada. [`src/services/catalogService.js`](./src/services/catalogService.js)
-consulta `plant_catalog`, inicia o seed quando a coleção está vazia e usa o
-catálogo local quando o Firestore está indisponível. A tela do guia possui o
-botão **Restaurar catálogo padrão**.
-
-### CRUD de espécies
-
-A tela **Cadastrar espécie** permite criar uma recomendação personalizada com
-nome, nome científico, categoria, ambiente, luz, intervalo de rega e dicas.
-Esses registros são gravados na coleção `plant_catalog` com `source: "user"`.
-
-O fluxo completo é:
-
-- **Create:** botão “Cadastrar nova espécie” no guia;
-- **Read:** espécies remotas aparecem no guia e no seletor do cadastro;
-- **Update:** espécies criadas pelo usuário possuem “Editar espécie”;
-- **Delete:** espécies criadas pelo usuário possuem “Excluir”.
-
-Os registros oficiais do seed não exibem ações de edição/exclusão, evitando que
-uma alteração acidental remova o catálogo padrão. A opção de restauração
-reaplica os dados oficiais usando `merge`.
-
-> As regras atuais são adequadas apenas para a demonstração acadêmica sem
-> autenticação. Elas permitem acesso ao projeto de teste. Antes de publicar na
-> Google Play, implemente Firebase Auth, salve `userId` nas plantas e restrinja
-> as regras ao usuário autenticado.
+- consultar espécies;
+- pesquisar por nome ou categoria;
+- filtrar espécies;
+- cadastrar uma nova espécie;
+- editar e excluir espécies cadastradas pelo usuário;
+- restaurar o catálogo padrão.
 
 ## Testes e validação
 
+Execute os comandos abaixo antes da entrega:
+
 ```bash
+npm run lint
 npm test -- --runInBand
 npx expo export --platform android
-npx expo install --check
 ```
 
-O teste atual cobre a renderização das recomendações e dos ícones do
-[`PlantCareCard`](./src/__tests__/PlantCareCard.test.js).
+Os testes cobrem o componente de recomendações, os ícones de cuidados, o
+cálculo da próxima rega e a classificação dos status de cuidado.
 
-Os testes também validam o cálculo da próxima rega e a classificação dos
-status `Regar hoje`, `Atrasada` e próximos cuidados em
-[`plantService.test.js`](./src/__tests__/plantService.test.js).
+## Roteiro para demonstração
 
-## Design e fluxo principal
-
-O fluxo principal foi desenhado para reduzir toques:
-
-1. A tela **Hoje** prioriza plantas atrasadas ou que precisam de água.
-2. O botão **Regar** aparece diretamente nos cards da home e de **Minhas
-   plantas**.
-3. Após a rega, a próxima data é recalculada e o status visual do card muda.
-4. O cadastro possui um único seletor de nome/espécie, com opção para
-   cadastrar uma espécie fora do catálogo.
-5. A tela de detalhes destaca próxima rega, última rega e recomendações da
-   espécie.
-
-Os valores visuais compartilhados ficam em
-[`src/constants/theme.js`](./src/constants/theme.js), e regras de data/status
-ficam em [`src/utils/watering.js`](./src/utils/watering.js).
-
-## Fluxo demonstrado
-
-1. Abrir a tela inicial.
-2. Adicionar uma planta.
+1. Abrir a tela **Hoje**.
+2. Cadastrar uma planta pelo botão **Adicionar planta**.
 3. Selecionar uma espécie no catálogo.
-4. Conferir o preenchimento automático dos cuidados.
-5. Escolher uma foto e uma data.
-6. Salvar e verificar a planta no Firestore.
-7. Abrir os detalhes e registrar uma rega.
-8. Confirmar que o próximo cuidado foi recalculado imediatamente.
-9. Editar e excluir a planta com confirmação.
-10. Abrir o guia, pesquisar uma espécie e restaurar o catálogo.
-
-## Organização Git Flow
-
-O projeto utiliza:
-
-- `main`: versão estável;
-- `develop`: integração das funcionalidades;
-- `feature/nome-da-funcionalidade`: desenvolvimento isolado.
-
-As funcionalidades devem ser entregues por Pull Requests para `develop`, com
-revisão antes do merge. Exemplos de branches utilizadas:
-
-- `feature/navigation-and-structure`;
-- `feature/plants-crud`;
-- `feature/plant-form`;
-- `feature/global-plant-state`;
-- `feature/native-plant-features`;
-- `feature/ux-feedback`;
-- `feature/plant-care-guide`.
-
-## Equipe e divisão de tarefas
-
-Preencha esta seção com os nomes oficiais da equipe antes da entrega:
-
-| Integrante | Responsabilidades         |
-| ---------- | ------------------------- |
-| Mariana    | Navegação e estrutura     |
-| Mariana    | Firebase e CRUD           |
-| Mariana    | Formulários e UX          |
-| Mariana    | Recursos nativos e testes |
+4. Conferir o preenchimento dos cuidados recomendados.
+5. Adicionar uma foto pela câmera ou galeria.
+6. Salvar e mostrar a planta em **Minhas plantas**.
+7. Registrar uma rega diretamente no card.
+8. Mostrar a atualização da próxima rega e do status.
+9. Abrir os detalhes, editar e excluir a planta.
+10. Abrir o **Guia de cuidados**.
+11. Cadastrar uma nova espécie personalizada.
+12. Mostrar a busca, os filtros e a restauração do catálogo.
 
 ## Screenshots e vídeo
 
-Adicione nesta seção as capturas reais do aplicativo e o link do vídeo de
-3–5 minutos exigido pelo professor:
+Adicione as capturas reais em `docs/screenshots/` e atualize os caminhos:
 
-```text
-- Screenshot da tela inicial: adicionar caminho ou imagem aqui
-- Screenshot do cadastro: adicionar caminho ou imagem aqui
-- Screenshot do guia: adicionar caminho ou imagem aqui
-- Vídeo de demonstração: adicionar link aqui
-```
+- `docs/screenshots/tela-hoje.png`
+- `docs/screenshots/minhas-plantas.png`
+- `docs/screenshots/cadastro-planta.png`
+- `docs/screenshots/guia-cuidados.png`
 
-Para a entrega, substitua os marcadores acima por imagens reais armazenadas em
-`docs/screenshots/` e pelo link do vídeo de 3–5 minutos.
+Link do vídeo de demonstração de 3 a 5 minutos:
+
+> **Preencher com o link do vídeo antes da entrega.**
+
+## Checklist de entrega
+
+- [x] Substituir os nomes dos integrantes.
+- [ ] Adicionar screenshots reais.
+- [ ] Adicionar o link do vídeo.
+- [x] Confirmar que o repositório está acessível ao professor.
+- [ ] Executar lint, testes e export Android.
+- [ ] Conferir se as regras e a configuração do Firebase estão atualizadas.
+- [ ] Abrir um Pull Request da branch de funcionalidade para `develop`.
+
+## Observação para publicação futura
+
+Para publicar o aplicativo na Google Play, será necessário, além da versão
+acadêmica:
+
+- Firebase Authentication e regras por usuário.
+- Firebase Storage para fotos.
+- Identificador Android definitivo.
+- Política de privacidade.
+- Build de produção no formato AAB.
+- Ícone, nome e informações de classificação do aplicativo.

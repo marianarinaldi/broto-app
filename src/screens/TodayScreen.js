@@ -1,4 +1,5 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useMemo } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import ScreenContainer from '../components/ScreenContainer';
@@ -10,7 +11,17 @@ import { getWateringStatus } from '../utils/watering';
 
 export default function TodayScreen({ navigation }) {
   const { plants, operationPlantId, updateWateringDate } = usePlants();
-  const plantsToCare = plants.filter((plant) => getWateringStatus(plant).isDue);
+  const plantsToCare = useMemo(
+    () => plants.filter((plant) => getWateringStatus(plant).isDue),
+    [plants],
+  );
+  const priorityPlants = useMemo(
+    () => plants
+      .slice()
+      .sort((a, b) => Number(getWateringStatus(b).isDue) - Number(getWateringStatus(a).isDue))
+      .slice(0, 3),
+    [plants],
+  );
   const firstName = 'jardineiro';
   const today = new Intl.DateTimeFormat('pt-BR', {
     weekday: 'long',
@@ -101,7 +112,7 @@ export default function TodayScreen({ navigation }) {
                 <Text style={styles.seeAll}>Ver todas</Text>
               </Pressable>
             </View>
-            {plants.slice().sort((a, b) => Number(getWateringStatus(b).isDue) - Number(getWateringStatus(a).isDue)).slice(0, 3).map((plant) => {
+            {priorityPlants.map((plant) => {
               const status = getWateringStatus(plant);
               return (
                 <View key={plant.id} style={styles.plantRow}>

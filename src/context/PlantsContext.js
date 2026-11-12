@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 
 import {
   createPlant as createPlantService,
@@ -16,20 +16,40 @@ export function PlantsProvider({ children }) {
   const [error, setError] = useState('');
   const [operationLoading, setOperationLoading] = useState(false);
   const [operationPlantId, setOperationPlantId] = useState(null);
+  const loadingRequestRef = useRef(null);
+  const lastLoadedAtRef = useRef(0);
+  const plantsRef = useRef(plants);
 
-  const loadPlants = useCallback(async () => {
-    setLoading(true);
-    setError('');
-    try {
-      const loadedPlants = await getPlants();
-      setPlants(loadedPlants);
-      return loadedPlants;
-    } catch {
-      setError('Não foi possível carregar suas plantas.');
-      return [];
-    } finally {
-      setLoading(false);
+  const loadPlants = useCallback(async ({ force = false, silent = false } = {}) => {
+    const cacheAge = Date.now() - lastLoadedAtRef.current;
+    if (!force && silent && cacheAge < 30_000) {
+      return plantsRef.current;
     }
+
+    if (loadingRequestRef.current) {
+      return loadingRequestRef.current;
+    }
+
+    if (!silent) setLoading(true);
+    setError('');
+    const request = getPlants()
+      .then((loadedPlants) => {
+        setPlants(loadedPlants);
+        plantsRef.current = loadedPlants;
+        lastLoadedAtRef.current = Date.now();
+        return loadedPlants;
+      })
+      .catch(() => {
+        setError('Não foi possível carregar suas plantas.');
+        return [];
+      })
+      .finally(() => {
+        loadingRequestRef.current = null;
+        if (!silent) setLoading(false);
+      });
+
+    loadingRequestRef.current = request;
+    return request;
   }, []);
 
   useEffect(() => {

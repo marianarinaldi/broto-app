@@ -14,14 +14,20 @@ export default function MyPlantsScreen({ navigation }) {
   const { plants, loading, error, loadPlants, operationPlantId, updateWateringDate } = usePlants();
 
   useFocusEffect(useCallback(() => {
-    loadPlants();
+    loadPlants({ silent: true });
   }, [loadPlants]));
 
   return (
     <ScreenContainer>
       <ScrollView
         contentContainerStyle={styles.content}
-        refreshControl={<RefreshControl colors={['#2F6B45']} onRefresh={loadPlants} refreshing={loading} />}
+        refreshControl={(
+          <RefreshControl
+            colors={['#2F6B45']}
+            onRefresh={() => loadPlants({ force: true })}
+            refreshing={loading}
+          />
+        )}
       >
         <View style={styles.heading}>
           <View accessible={false}>
