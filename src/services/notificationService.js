@@ -1,4 +1,6 @@
 import * as Notifications from 'expo-notifications';
+import { AndroidImportance } from 'expo-notifications';
+import { Platform } from 'react-native';
 
 let permissionPromise;
 
@@ -22,13 +24,28 @@ export async function schedulePlantReminder({ plantName, date }) {
     return null;
   }
 
+  if (!(date instanceof Date) || Number.isNaN(date.getTime()) || date.getTime() <= Date.now()) {
+    return null;
+  }
+
+  if (Platform.OS === 'android') {
+    await Notifications.setNotificationChannelAsync('plant-care', {
+      name: 'Cuidados das plantas',
+      importance: AndroidImportance.DEFAULT,
+    });
+  }
+
   return Notifications.scheduleNotificationAsync({
     content: {
       title: 'Hora de cuidar do seu Broto 🌿',
       body: `A ${plantName} está esperando por você.`,
       data: { plantName },
     },
-    trigger: date,
+    trigger: {
+      type: Notifications.SchedulableTriggerInputTypes.DATE,
+      date,
+      channelId: 'plant-care',
+    },
   });
 }
 
