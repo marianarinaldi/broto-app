@@ -2,12 +2,11 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
-  Modal,
   Platform,
   Pressable,
   ScrollView,
@@ -19,9 +18,12 @@ import {
 
 import ScreenContainer from "../components/ScreenContainer";
 import PlantCareCard from "../components/PlantCareCard";
+import SpeciesSelector from "../components/SpeciesSelector";
 import plantCatalogData from "../constants/plantCatalogData";
 import { usePlants } from "../context/PlantsContext";
 import { schedulePlantReminder } from "../services/notificationService";
+import { getPlantCatalog } from "../services/catalogService";
+import { useFocusEffect } from "@react-navigation/native";
 
 export default function AddPlantScreen({ navigation, route }) {
   const plant = route.params?.plant;
@@ -49,9 +51,26 @@ export default function AddPlantScreen({ navigation, route }) {
     plant && !plantCatalogData.some((item) => item.name === plant.species) ? plant.species ?? "" : "",
   );
   const [customSpeciesMode, setCustomSpeciesMode] = useState(false);
+  const [catalogItems, setCatalogItems] = useState(plantCatalogData);
+
+  const loadCatalog = useCallback(() => {
+    let active = true;
+    getPlantCatalog().then((items) => {
+      if (active) setCatalogItems(items);
+    }).catch(() => {
+      // The local catalog remains available when the remote catalog is offline.
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    loadCatalog();
+  }, [loadCatalog]);
 
   const formatDate = (date) => date.toLocaleDateString("pt-BR");
-  const selectCatalogPlant = (item) => {
+  const selectCatalogPlant = useCallback((item) => {
     setSelectedCatalogPlant(item);
     setCustomSpeciesMode(false);
     setName(item.name);
@@ -60,16 +79,19 @@ export default function AddPlantScreen({ navigation, route }) {
     setLightType(item.lightType);
     setEnvironment(item.environment);
     if (errors.species) setErrors({ ...errors, species: "" });
-  };
+  }, [errors]);
+
+  useFocusEffect(useCallback(() => {
+    const newCatalogPlant = route.params?.createdCatalogPlant;
+    if (newCatalogPlant) {
+      selectCatalogPlant(newCatalogPlant);
+      navigation.setParams({ createdCatalogPlant: undefined });
+    }
+  }, [navigation, route.params?.createdCatalogPlant, selectCatalogPlant]));
 
   const selectCustomSpecies = () => {
-    setName("");
-    setSpecies("");
-    setCustomSpeciesMode(true);
     setSpeciesModalVisible(false);
-    setLightType("");
-    setEnvironment("");
-    setWateringFrequency("");
+    navigation.navigate("Cadastrar espécie", { returnToPlantForm: true });
   };
 
   const handlePickImage = async () => {
@@ -206,19 +228,18 @@ export default function AddPlantScreen({ navigation, route }) {
           </Text>
 
           <Text style={styles.label}>Nome da planta ou espécie *</Text>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={species ? `Planta selecionada: ${species}` : "Selecionar planta ou espécie"}
-            accessibilityHint="Abre a lista de espécies disponíveis"
-            accessibilityState={{ expanded: speciesModalVisible }}
-            onPress={() => setSpeciesModalVisible(true)}
-            style={[styles.selectInput, errors.species && styles.inputError]}
-          >
-            <Text style={species ? styles.selectText : styles.placeholderText}>
-              {species || (customSpeciesMode ? "Outra espécie" : "Selecione uma espécie")}
-            </Text>
-            <MaterialCommunityIcons name="chevron-down" size={22} color="#2F6B45" />
-          </Pressable>
+          <SpeciesSelector
+            items={catalogItems}
+            onClose={() => setSpeciesModalVisible(false)}
+            onCustom={selectCustomSpecies}
+            onOpen={() => setSpeciesModalVisible(true)}
+            onSelect={(item) => {
+              selectCatalogPlant(item);
+              setSpeciesModalVisible(false);
+            }}
+            selected={species}
+            visible={speciesModalVisible}
+          />
           {customSpeciesMode && (
             <TextInput
               accessibilityLabel="Nome da planta ou espécie personalizada, campo obrigatório"
@@ -240,51 +261,6 @@ export default function AddPlantScreen({ navigation, route }) {
           {!!errors.species && (
             <Text accessibilityLiveRegion="polite" accessibilityRole="alert" style={styles.error}>{errors.species}</Text>
           )}
-          <Modal
-            animationType="slide"
-            onRequestClose={() => setSpeciesModalVisible(false)}
-            transparent
-            visible={speciesModalVisible}
-          >
-            <Pressable style={styles.modalBackdrop} onPress={() => setSpeciesModalVisible(false)}>
-              <Pressable style={styles.speciesModal} onPress={(event) => event.stopPropagation()}>
-                <View style={styles.modalHandle} />
-                <Text accessibilityRole="header" style={styles.modalTitle}>Escolha a espécie</Text>
-                <Text style={styles.modalDescription}>Os cuidados serão preenchidos automaticamente.</Text>
-                {plantCatalogData.map((item) => (
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel={`Selecionar ${item.name}`}
-                    key={item.id}
-                    onPress={() => {
-                      selectCatalogPlant(item);
-                      setSpeciesModalVisible(false);
-                    }}
-                    style={styles.speciesOption}
-                  >
-                    <MaterialCommunityIcons name={item.icon} size={22} color="#2F6B45" />
-                    <View style={styles.suggestionCopy}>
-                      <Text style={styles.suggestionName}>{item.name}</Text>
-                      <Text style={styles.suggestionMeta}>{item.scientificName}</Text>
-                    </View>
-                    {species === item.name && <MaterialCommunityIcons name="check" size={21} color="#2F6B45" />}
-                  </Pressable>
-                ))}
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="Adicionar outra espécie"
-                  onPress={selectCustomSpecies}
-                  style={styles.speciesOption}
-                >
-                  <MaterialCommunityIcons name="plus-circle-outline" size={22} color="#2F6B45" />
-                  <View style={styles.suggestionCopy}>
-                    <Text style={styles.suggestionName}>Outra espécie</Text>
-                    <Text style={styles.suggestionMeta}>Cadastrar cuidados manualmente</Text>
-                  </View>
-                </Pressable>
-              </Pressable>
-            </Pressable>
-          </Modal>
 
           <Text style={styles.label}>Frequência de rega *</Text>
           <TextInput
@@ -448,21 +424,12 @@ const styles = StyleSheet.create({
     padding: 14,
   },
   inputError: { borderColor: "#C65353" },
-  selectInput: { alignItems: "center", backgroundColor: "#FFFFFF", borderColor: "#D8E5D9", borderRadius: 12, borderWidth: 1, flexDirection: "row", justifyContent: "space-between", minHeight: 52, paddingHorizontal: 14 },
-  selectText: { color: "#183B25", fontSize: 15 },
-  placeholderText: { color: "#9AA99C", fontSize: 15 },
   customSpeciesInput: { borderBottomColor: "#D8E5D9", borderBottomWidth: 1, color: "#183B25", fontSize: 13, marginTop: 6, paddingHorizontal: 4, paddingVertical: 8 },
   suggestionCopy: { marginLeft: 10 },
   suggestionName: { color: "#183B25", fontSize: 14, fontWeight: "700" },
   suggestionMeta: { color: "#718378", fontSize: 12, marginTop: 2, textTransform: "capitalize" },
   careFields: { flexDirection: "row", gap: 8 },
   careInput: { flex: 1 },
-  modalBackdrop: { backgroundColor: "rgba(10, 30, 18, 0.45)", flex: 1, justifyContent: "flex-end" },
-  speciesModal: { backgroundColor: "#F7FBF6", borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: "85%", padding: 22 },
-  modalHandle: { alignSelf: "center", backgroundColor: "#C7D8C9", borderRadius: 3, height: 5, marginBottom: 16, width: 42 },
-  modalTitle: { color: "#183B25", fontSize: 22, fontWeight: "800" },
-  modalDescription: { color: "#718378", fontSize: 14, marginBottom: 12, marginTop: 5 },
-  speciesOption: { alignItems: "center", borderBottomColor: "#E1EDE2", borderBottomWidth: 1, flexDirection: "row", minHeight: 58, paddingVertical: 9 },
   error: { color: "#A33A3A", fontSize: 12, marginTop: 5 },
   helper: { color: "#7B8D7D", fontSize: 12, marginTop: 5 },
   dateInput: {

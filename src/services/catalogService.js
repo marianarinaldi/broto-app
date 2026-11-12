@@ -1,9 +1,10 @@
-import { collection, doc, getDocs, setDoc } from 'firebase/firestore';
+import { addDoc, collection, deleteDoc, doc, getDocs, setDoc, updateDoc } from 'firebase/firestore';
 
 import { db } from '../config/firebaseConfig';
 import { PLANT_CATALOG_SEED } from '../constants/plantCatalogData';
 
 const CATALOG_COLLECTION = 'plant_catalog';
+const catalogCollection = collection(db, CATALOG_COLLECTION);
 
 const toCatalogItem = (snapshot) => ({
   ...snapshot.data(),
@@ -38,4 +39,23 @@ export async function getPlantCatalog() {
 export async function restorePlantCatalog() {
   await seedPlantCatalog();
   return PLANT_CATALOG_SEED;
+}
+
+export async function createCatalogPlant(plantData) {
+  const document = {
+    ...plantData,
+    source: 'user',
+    createdAt: new Date().toISOString(),
+  };
+  const snapshot = await addDoc(catalogCollection, document);
+  return { id: snapshot.id, ...document };
+}
+
+export async function updateCatalogPlant(plantId, plantData) {
+  await updateDoc(doc(db, CATALOG_COLLECTION, plantId), plantData);
+  return { id: plantId, ...plantData };
+}
+
+export async function deleteCatalogPlant(plantId) {
+  await deleteDoc(doc(db, CATALOG_COLLECTION, plantId));
 }

@@ -15,6 +15,7 @@ adubação.
 - Foto da planta pela câmera ou galeria.
 - Lembretes locais de cuidados.
 - Guia de cuidados com pesquisa, filtros e fallback local.
+- CRUD de espécies personalizadas no catálogo remoto.
 - Estados de carregamento, erro, vazio, sucesso e confirmação de exclusão.
 - Interface acessível com labels, hints, feedback para leitor de tela e alvos
   de toque confortáveis.
@@ -56,7 +57,7 @@ src/
 ## Instalação e execução
 
 ```bash
-git clone URL_DO_REPOSITORIO
+git clone https://github.com/marianarinaldi/broto-app.git
 cd broto-app
 npm install
 npx expo start
@@ -125,6 +126,23 @@ consulta `plant_catalog`, inicia o seed quando a coleção está vazia e usa o
 catálogo local quando o Firestore está indisponível. A tela do guia possui o
 botão **Restaurar catálogo padrão**.
 
+### CRUD de espécies
+
+A tela **Cadastrar espécie** permite criar uma recomendação personalizada com
+nome, nome científico, categoria, ambiente, luz, intervalo de rega e dicas.
+Esses registros são gravados na coleção `plant_catalog` com `source: "user"`.
+
+O fluxo completo é:
+
+- **Create:** botão “Cadastrar nova espécie” no guia;
+- **Read:** espécies remotas aparecem no guia e no seletor do cadastro;
+- **Update:** espécies criadas pelo usuário possuem “Editar espécie”;
+- **Delete:** espécies criadas pelo usuário possuem “Excluir”.
+
+Os registros oficiais do seed não exibem ações de edição/exclusão, evitando que
+uma alteração acidental remova o catálogo padrão. A opção de restauração
+reaplica os dados oficiais usando `merge`.
+
 > As regras atuais são adequadas apenas para a demonstração acadêmica sem
 > autenticação. Elas permitem acesso ao projeto de teste. Antes de publicar na
 > Google Play, implemente Firebase Auth, salve `userId` nas plantas e restrinja
@@ -140,6 +158,27 @@ npx expo install --check
 
 O teste atual cobre a renderização das recomendações e dos ícones do
 [`PlantCareCard`](./src/__tests__/PlantCareCard.test.js).
+
+Os testes também validam o cálculo da próxima rega e a classificação dos
+status `Regar hoje`, `Atrasada` e próximos cuidados em
+[`plantService.test.js`](./src/__tests__/plantService.test.js).
+
+## Design e fluxo principal
+
+O fluxo principal foi desenhado para reduzir toques:
+
+1. A tela **Hoje** prioriza plantas atrasadas ou que precisam de água.
+2. O botão **Regar** aparece diretamente nos cards da home e de **Minhas
+   plantas**.
+3. Após a rega, a próxima data é recalculada e o status visual do card muda.
+4. O cadastro possui um único seletor de nome/espécie, com opção para
+   cadastrar uma espécie fora do catálogo.
+5. A tela de detalhes destaca próxima rega, última rega e recomendações da
+   espécie.
+
+Os valores visuais compartilhados ficam em
+[`src/constants/theme.js`](./src/constants/theme.js), e regras de data/status
+ficam em [`src/utils/watering.js`](./src/utils/watering.js).
 
 ## Fluxo demonstrado
 
@@ -177,12 +216,12 @@ revisão antes do merge. Exemplos de branches utilizadas:
 
 Preencha esta seção com os nomes oficiais da equipe antes da entrega:
 
-| Integrante | Responsabilidades |
-|---|---|
-| Nome do integrante | Navegação e estrutura |
-| Nome do integrante | Firebase e CRUD |
-| Nome do integrante | Formulários e UX |
-| Nome do integrante | Recursos nativos e testes |
+| Integrante | Responsabilidades         |
+| ---------- | ------------------------- |
+| Mariana    | Navegação e estrutura     |
+| Mariana    | Firebase e CRUD           |
+| Mariana    | Formulários e UX          |
+| Mariana    | Recursos nativos e testes |
 
 ## Screenshots e vídeo
 
@@ -196,16 +235,5 @@ Adicione nesta seção as capturas reais do aplicativo e o link do vídeo de
 - Vídeo de demonstração: adicionar link aqui
 ```
 
-## Próximos passos para Google Play
-
-Antes da publicação, ainda é necessário:
-
-1. Configurar Firebase Authentication e regras por usuário.
-2. Enviar fotos para Firebase Storage em vez de manter apenas URI local.
-3. Trocar `com.anonymous.brotoapp` por um identificador definitivo.
-4. Configurar ícone, nome, política de privacidade e formulário de segurança de
-   dados da Play Console.
-5. Criar uma build de produção AAB com EAS Build.
-
-A Development Build usada durante o desenvolvimento não é a versão de
-produção da Google Play.
+Para a entrega, substitua os marcadores acima por imagens reais armazenadas em
+`docs/screenshots/` e pelo link do vídeo de 3–5 minutos.

@@ -1,7 +1,7 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-export default function EmptyPlantsState({ onAdd }) {
+export default function EmptyPlantsState({ onAdd, onGuide }) {
   return (
     <View style={styles.container}>
       <View style={styles.illustration}>
@@ -20,6 +20,11 @@ export default function EmptyPlantsState({ onAdd }) {
         <MaterialCommunityIcons accessible={false} name="plus" size={22} color="#FFFFFF" />
         <Text style={styles.buttonText}>Cadastrar primeira planta</Text>
       </Pressable>
+      {onGuide && (
+        <Pressable accessibilityRole="button" onPress={onGuide} style={styles.secondaryButton}>
+          <Text style={styles.secondaryText}>Conhecer o guia de espécies</Text>
+        </Pressable>
+      )}
     </View>
   );
 }
@@ -32,4 +37,6 @@ const styles = StyleSheet.create({
   button: { alignItems: 'center', backgroundColor: '#2F6B45', borderRadius: 14, flexDirection: 'row', justifyContent: 'center', marginTop: 24, minHeight: 56, paddingHorizontal: 20 },
   buttonText: { color: '#FFFFFF', fontSize: 16, fontWeight: '700', marginLeft: 8 },
   pressed: { opacity: 0.78 },
+  secondaryButton: { marginTop: 14, minHeight: 44, padding: 10 },
+  secondaryText: { color: '#2F6B45', fontSize: 14, fontWeight: '700' },
 });

@@ -11,7 +11,7 @@ import ScreenContainer from '../components/ScreenContainer';
 import { usePlants } from '../context/PlantsContext';
 
 export default function MyPlantsScreen({ navigation }) {
-  const { plants, loading, error, loadPlants } = usePlants();
+  const { plants, loading, error, loadPlants, operationPlantId, updateWateringDate } = usePlants();
 
   useFocusEffect(useCallback(() => {
     loadPlants();
@@ -59,6 +59,8 @@ export default function MyPlantsScreen({ navigation }) {
             key={plant.id}
             plant={plant}
             onPress={() => navigation.navigate('Detalhes da planta', { plant })}
+            onWatering={() => updateWateringDate(plant.id)}
+            loading={operationPlantId === plant.id}
           />
         ))}
       </ScrollView>

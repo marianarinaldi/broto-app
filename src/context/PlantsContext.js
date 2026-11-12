@@ -15,6 +15,7 @@ export function PlantsProvider({ children }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [operationLoading, setOperationLoading] = useState(false);
+  const [operationPlantId, setOperationPlantId] = useState(null);
 
   const loadPlants = useCallback(async () => {
     setLoading(true);
@@ -71,6 +72,7 @@ export function PlantsProvider({ children }) {
 
   const updateWateringDate = useCallback(async (plantId) => {
     setOperationLoading(true);
+    setOperationPlantId(plantId);
     setError('');
     try {
       const result = await updateWateringDateService(plantId);
@@ -87,6 +89,7 @@ export function PlantsProvider({ children }) {
       throw wateringError;
     } finally {
       setOperationLoading(false);
+      setOperationPlantId(null);
     }
   }, []);
 
@@ -110,6 +113,7 @@ export function PlantsProvider({ children }) {
       loading,
       error,
       operationLoading,
+      operationPlantId,
       loadPlants,
       createPlant,
       updatePlant,
@@ -121,6 +125,7 @@ export function PlantsProvider({ children }) {
       loading,
       error,
       operationLoading,
+      operationPlantId,
       loadPlants,
       createPlant,
       updatePlant,

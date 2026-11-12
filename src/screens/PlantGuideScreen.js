@@ -5,7 +5,7 @@ import { FlatList, Modal, Pressable, StyleSheet, Text, TextInput, View } from 'r
 import PlantCareCard from '../components/PlantCareCard';
 import ScreenContainer from '../components/ScreenContainer';
 import { PLANT_CATALOG_SEED } from '../constants/plantCatalogData';
-import { getPlantCatalog, restorePlantCatalog } from '../services/catalogService';
+import { deleteCatalogPlant, getPlantCatalog, restorePlantCatalog } from '../services/catalogService';
 
 const filters = [
   { id: 'all', label: 'Todas' },
@@ -81,6 +81,15 @@ export default function PlantGuideScreen({ navigation }) {
         <MaterialCommunityIcons name="backup-restore" size={20} color="#2F6B45" />
         <Text style={styles.restoreText}>{restoring ? 'Restaurando...' : 'Restaurar catálogo padrão'}</Text>
       </Pressable>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Cadastrar nova espécie"
+        onPress={() => navigation.navigate('Cadastrar espécie')}
+        style={({ pressed }) => [styles.addSpecies, pressed && styles.pressed]}
+      >
+        <MaterialCommunityIcons name="plus" size={20} color="#FFFFFF" />
+        <Text style={styles.addSpeciesText}>Cadastrar nova espécie</Text>
+      </Pressable>
       {!!catalogError && <Text accessibilityRole="alert" style={styles.error}>{catalogError}</Text>}
       <TextInput
         accessibilityLabel="Pesquisar espécie no guia"
@@ -150,6 +159,35 @@ export default function PlantGuideScreen({ navigation }) {
               >
                 <Text style={styles.useButtonText}>Usar esta espécie no cadastro</Text>
               </Pressable>
+              {selectedPlant.source === 'user' && (
+                <View style={styles.manageActions}>
+                  <Pressable
+                    accessibilityRole="button"
+                    onPress={() => {
+                      setSelectedPlant(null);
+                      navigation.navigate('Cadastrar espécie', { catalogPlant: selectedPlant });
+                    }}
+                    style={styles.editSpecies}
+                  >
+                    <Text style={styles.editSpeciesText}>Editar espécie</Text>
+                  </Pressable>
+                  <Pressable
+                    accessibilityRole="button"
+                    onPress={async () => {
+                      try {
+                        await deleteCatalogPlant(selectedPlant.id);
+                        setCatalog((items) => items.filter((item) => item.id !== selectedPlant.id));
+                        setSelectedPlant(null);
+                      } catch {
+                        setCatalogError('Não foi possível excluir esta espécie.');
+                      }
+                    }}
+                    style={styles.deleteSpecies}
+                  >
+                    <Text style={styles.deleteSpeciesText}>Excluir</Text>
+                  </Pressable>
+                </View>
+              )}
             </View>
           </ScreenContainer>
         )}
@@ -164,6 +202,8 @@ const styles = StyleSheet.create({
   subtitle: { color: '#718378', fontSize: 15, marginTop: 7 },
   restoreButton: { alignItems: 'center', alignSelf: 'flex-start', flexDirection: 'row', marginLeft: 20, marginTop: 14, padding: 5 },
   restoreText: { color: '#2F6B45', fontSize: 13, fontWeight: '700', marginLeft: 7 },
+  addSpecies: { alignItems: 'center', alignSelf: 'flex-start', backgroundColor: '#2F6B45', borderRadius: 12, flexDirection: 'row', marginLeft: 20, marginTop: 10, paddingHorizontal: 13, paddingVertical: 10 },
+  addSpeciesText: { color: '#FFFFFF', fontSize: 13, fontWeight: '800', marginLeft: 6 },
   error: { color: '#A33A3A', fontSize: 13, marginHorizontal: 20, marginTop: 8 },
   search: { backgroundColor: '#FFFFFF', borderColor: '#D8E5D9', borderRadius: 14, borderWidth: 1, color: '#183B25', fontSize: 16, margin: 20, marginBottom: 12, padding: 15 },
   filters: { flexDirection: 'row', gap: 8, paddingHorizontal: 20 },
@@ -188,4 +228,9 @@ const styles = StyleSheet.create({
   tipText: { color: '#52665A', fontSize: 15, lineHeight: 22, marginTop: 8 },
   useButton: { backgroundColor: '#2F6B45', borderRadius: 14, marginTop: 24, minHeight: 56, padding: 17 },
   useButtonText: { color: '#FFFFFF', fontSize: 16, fontWeight: '800', textAlign: 'center' },
+  manageActions: { flexDirection: 'row', gap: 10, marginTop: 12 },
+  editSpecies: { borderColor: '#2F6B45', borderRadius: 12, borderWidth: 1, flex: 1, padding: 14 },
+  editSpeciesText: { color: '#2F6B45', fontWeight: '800', textAlign: 'center' },
+  deleteSpecies: { borderColor: '#F0D4D0', borderRadius: 12, borderWidth: 1, padding: 14 },
+  deleteSpeciesText: { color: '#A33A3A', fontWeight: '800' },
 });
