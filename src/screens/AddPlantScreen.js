@@ -2,7 +2,7 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -17,19 +17,28 @@ import {
 } from "react-native";
 
 import ScreenContainer from "../components/ScreenContainer";
+import PlantCareCard from "../components/PlantCareCard";
+import SpeciesSelector from "../components/SpeciesSelector";
+import plantCatalogData from "../constants/plantCatalogData";
 import { usePlants } from "../context/PlantsContext";
 import { schedulePlantReminder } from "../services/notificationService";
+import { getPlantCatalog } from "../services/catalogService";
+import { useFocusEffect } from "@react-navigation/native";
 
 export default function AddPlantScreen({ navigation, route }) {
   const plant = route.params?.plant;
+  const catalogPlant = route.params?.catalogPlant;
   const { createPlant, updatePlant, operationLoading } = usePlants();
   const defaultCareDate = new Date();
   defaultCareDate.setDate(defaultCareDate.getDate() + 1);
   defaultCareDate.setHours(9, 0, 0, 0);
-  const [name, setName] = useState(plant?.name ?? "");
-  const [species, setSpecies] = useState(plant?.species ?? "");
+  const [name, setName] = useState(plant?.name ?? plant?.species ?? "");
+  const [species, setSpecies] = useState(plant?.species ?? plant?.name ?? "");
+  const [selectedCatalogPlant, setSelectedCatalogPlant] = useState(catalogPlant ?? null);
+  const [lightType, setLightType] = useState(plant?.lightType ?? catalogPlant?.lightType ?? "");
+  const [environment, setEnvironment] = useState(plant?.environment ?? catalogPlant?.environment ?? "");
   const [wateringFrequency, setWateringFrequency] = useState(
-    plant?.wateringFrequency ? String(plant.wateringFrequency) : "",
+    plant?.wateringFrequency ? String(plant.wateringFrequency) : catalogPlant?.wateringIntervalDays ? String(catalogPlant.wateringIntervalDays) : "",
   );
   const [nextCareDate, setNextCareDate] = useState(
     plant?.nextCareDate ? new Date(plant.nextCareDate) : defaultCareDate,
@@ -37,8 +46,53 @@ export default function AddPlantScreen({ navigation, route }) {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [imageUri, setImageUri] = useState(plant?.imageUri ?? null);
   const [errors, setErrors] = useState({});
+  const [speciesModalVisible, setSpeciesModalVisible] = useState(false);
+  const [customSpecies, setCustomSpecies] = useState(
+    plant && !plantCatalogData.some((item) => item.name === plant.species) ? plant.species ?? "" : "",
+  );
+  const [customSpeciesMode, setCustomSpeciesMode] = useState(false);
+  const [catalogItems, setCatalogItems] = useState(plantCatalogData);
+
+  const loadCatalog = useCallback(() => {
+    let active = true;
+    getPlantCatalog().then((items) => {
+      if (active) setCatalogItems(items);
+    }).catch(() => {
+      // The local catalog remains available when the remote catalog is offline.
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    loadCatalog();
+  }, [loadCatalog]);
 
   const formatDate = (date) => date.toLocaleDateString("pt-BR");
+  const selectCatalogPlant = useCallback((item) => {
+    setSelectedCatalogPlant(item);
+    setCustomSpeciesMode(false);
+    setName(item.name);
+    setSpecies(item.name);
+    setWateringFrequency(String(item.wateringIntervalDays));
+    setLightType(item.lightType);
+    setEnvironment(item.environment);
+    if (errors.species) setErrors({ ...errors, species: "" });
+  }, [errors]);
+
+  useFocusEffect(useCallback(() => {
+    const newCatalogPlant = route.params?.createdCatalogPlant;
+    if (newCatalogPlant) {
+      selectCatalogPlant(newCatalogPlant);
+      navigation.setParams({ createdCatalogPlant: undefined });
+    }
+  }, [navigation, route.params?.createdCatalogPlant, selectCatalogPlant]));
+
+  const selectCustomSpecies = () => {
+    setSpeciesModalVisible(false);
+    navigation.navigate("Cadastrar espécie", { returnToPlantForm: true });
+  };
 
   const handlePickImage = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -105,6 +159,8 @@ export default function AddPlantScreen({ navigation, route }) {
         name: name.trim(),
         species: species.trim(),
         wateringFrequency: wateringFrequency.trim(),
+        lightType: lightType.trim(),
+        environment: environment.trim(),
         nextCare: formatDate(nextCareDate),
         nextCareDate: nextCareDate.toISOString(),
         imageUri,
@@ -123,7 +179,7 @@ export default function AddPlantScreen({ navigation, route }) {
       schedulePlantReminder({ plantName: data.name, date: nextCareDate }).catch((notificationError) => {
         console.warn("Não foi possível agendar o lembrete:", notificationError);
       });
-    } catch (error) {
+    } catch {
       Alert.alert("Erro", "Não foi possível salvar a planta. Tente novamente.");
     }
   };
@@ -171,42 +227,37 @@ export default function AddPlantScreen({ navigation, route }) {
             Preencha os dados abaixo para acompanhar os cuidados da sua planta.
           </Text>
 
-          <Text style={styles.label}>Nome da planta *</Text>
-          <TextInput
-            accessibilityLabel="Nome da planta, campo obrigatório"
-            accessibilityHint="Digite o nome pelo qual você identifica a planta"
-            autoCapitalize="words"
-            maxLength={50}
-            onChangeText={(value) => {
-              setName(value);
-              if (errors.name) setErrors({ ...errors, name: "" });
+          <Text style={styles.label}>Nome da planta ou espécie *</Text>
+          <SpeciesSelector
+            items={catalogItems}
+            onClose={() => setSpeciesModalVisible(false)}
+            onCustom={selectCustomSpecies}
+            onOpen={() => setSpeciesModalVisible(true)}
+            onSelect={(item) => {
+              selectCatalogPlant(item);
+              setSpeciesModalVisible(false);
             }}
-            placeholder="Ex.: Jiboia"
-            placeholderTextColor="#9AA99C"
-            style={[styles.input, errors.name && styles.inputError]}
-            value={name}
+            selected={species}
+            visible={speciesModalVisible}
           />
-          {!!errors.name && (
-            <Text accessibilityLiveRegion="polite" accessibilityRole="alert" style={styles.error}>
-              {errors.name}
-            </Text>
+          {customSpeciesMode && (
+            <TextInput
+              accessibilityLabel="Nome da planta ou espécie personalizada, campo obrigatório"
+              autoCapitalize="words"
+              maxLength={80}
+              onChangeText={(value) => {
+                setCustomSpecies(value);
+                setSpecies(value);
+                setName(value);
+                if (errors.name) setErrors({ ...errors, name: "" });
+                if (errors.species) setErrors({ ...errors, species: "" });
+              }}
+              placeholder="Digite o nome da planta ou espécie"
+              placeholderTextColor="#9AA99C"
+              style={[styles.customSpeciesInput, (errors.name || errors.species) && styles.inputError]}
+              value={customSpecies}
+            />
           )}
-
-          <Text style={styles.label}>Espécie *</Text>
-          <TextInput
-            accessibilityLabel="Espécie da planta, campo obrigatório"
-            accessibilityHint="Digite a espécie ou nome científico da planta"
-            autoCapitalize="words"
-            maxLength={80}
-            onChangeText={(value) => {
-              setSpecies(value);
-              if (errors.species) setErrors({ ...errors, species: "" });
-            }}
-            placeholder="Ex.: Epipremnum aureum"
-            placeholderTextColor="#9AA99C"
-            style={[styles.input, errors.species && styles.inputError]}
-            value={species}
-          />
           {!!errors.species && (
             <Text accessibilityLiveRegion="polite" accessibilityRole="alert" style={styles.error}>{errors.species}</Text>
           )}
@@ -235,6 +286,35 @@ export default function AddPlantScreen({ navigation, route }) {
           </Text>
           {!!errors.wateringFrequency && (
             <Text accessibilityLiveRegion="polite" accessibilityRole="alert" style={styles.error}>{errors.wateringFrequency}</Text>
+          )}
+
+          <Text style={styles.label}>Luz e ambiente</Text>
+          <View style={styles.careFields}>
+            <TextInput
+              accessibilityLabel="Necessidade de luz"
+              onChangeText={setLightType}
+              placeholder="Ex.: meia-sombra"
+              placeholderTextColor="#9AA99C"
+              style={[styles.input, styles.careInput]}
+              value={lightType}
+            />
+            <TextInput
+              accessibilityLabel="Ambiente da planta"
+              onChangeText={setEnvironment}
+              placeholder="Ex.: interno"
+              placeholderTextColor="#9AA99C"
+              style={[styles.input, styles.careInput]}
+              value={environment}
+            />
+          </View>
+          {lightType && environment && (
+            <PlantCareCard
+              environment={environment}
+              fertilizationNotes={selectedCatalogPlant?.fertilizationNotes ?? "Consulte o guia para escolher o adubo ideal."}
+              lightRequirement={selectedCatalogPlant?.lightRequirement}
+              lightType={lightType}
+              wateringIntervalDays={wateringFrequency || "?"}
+            />
           )}
 
           <Text style={styles.label}>Próximo cuidado *</Text>
@@ -344,6 +424,12 @@ const styles = StyleSheet.create({
     padding: 14,
   },
   inputError: { borderColor: "#C65353" },
+  customSpeciesInput: { borderBottomColor: "#D8E5D9", borderBottomWidth: 1, color: "#183B25", fontSize: 13, marginTop: 6, paddingHorizontal: 4, paddingVertical: 8 },
+  suggestionCopy: { marginLeft: 10 },
+  suggestionName: { color: "#183B25", fontSize: 14, fontWeight: "700" },
+  suggestionMeta: { color: "#718378", fontSize: 12, marginTop: 2, textTransform: "capitalize" },
+  careFields: { flexDirection: "row", gap: 8 },
+  careInput: { flex: 1 },
   error: { color: "#A33A3A", fontSize: 12, marginTop: 5 },
   helper: { color: "#7B8D7D", fontSize: 12, marginTop: 5 },
   dateInput: {

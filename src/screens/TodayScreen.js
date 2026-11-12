@@ -2,17 +2,15 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import ScreenContainer from '../components/ScreenContainer';
+import CareStatusBadge from '../components/CareStatusBadge';
+import EmptyPlantsState from '../components/EmptyPlantsState';
+import WateringButton from '../components/WateringButton';
 import { usePlants } from '../context/PlantsContext';
-import { getPlantMood } from '../utils/plantMood';
-
-const isDueToday = (plant) => {
-  if (!plant.nextCareDate) return plant.nextCare === 'Hoje';
-  return new Date(plant.nextCareDate).toDateString() === new Date().toDateString();
-};
+import { getWateringStatus } from '../utils/watering';
 
 export default function TodayScreen({ navigation }) {
-  const { plants } = usePlants();
-  const plantsToCare = plants.filter(isDueToday);
+  const { plants, operationPlantId, updateWateringDate } = usePlants();
+  const plantsToCare = plants.filter((plant) => getWateringStatus(plant).isDue);
   const firstName = 'jardineiro';
   const today = new Intl.DateTimeFormat('pt-BR', {
     weekday: 'long',
@@ -77,8 +75,24 @@ export default function TodayScreen({ navigation }) {
             </View>
             <MaterialCommunityIcons accessible={false} name="chevron-right" size={23} color="#2F6B45" />
           </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Abrir guia de cuidados"
+            onPress={() => navigation.navigate('Guia de cuidados')}
+            style={({ pressed }) => [styles.guideAction, pressed && styles.pressed]}
+          >
+            <MaterialCommunityIcons accessible={false} name="book-open-page-variant-outline" size={23} color="#2F6B45" />
+            <Text style={styles.guideText}>Consultar guia de cuidados</Text>
+            <MaterialCommunityIcons accessible={false} name="chevron-right" size={23} color="#7B8D7D" />
+          </Pressable>
         </View>
 
+        {plants.length === 0 && (
+          <EmptyPlantsState
+            onAdd={() => navigation.navigate('Adicionar planta')}
+            onGuide={() => navigation.navigate('Guia de cuidados')}
+          />
+        )}
         {plants.length > 0 && (
           <>
             <View style={styles.sectionHeader}>
@@ -87,23 +101,22 @@ export default function TodayScreen({ navigation }) {
                 <Text style={styles.seeAll}>Ver todas</Text>
               </Pressable>
             </View>
-            {plants.slice(0, 3).map((plant) => {
-              const mood = getPlantMood(plant);
+            {plants.slice().sort((a, b) => Number(getWateringStatus(b).isDue) - Number(getWateringStatus(a).isDue)).slice(0, 3).map((plant) => {
+              const status = getWateringStatus(plant);
               return (
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={`Abrir ${plant.name}. ${mood.label}. Próximo cuidado: ${plant.nextCare}`}
-                  key={plant.id}
-                  onPress={() => navigation.navigate('Detalhes da planta', { plant })}
-                  style={({ pressed }) => [styles.plantRow, pressed && styles.pressed]}
-                >
+                <View key={plant.id} style={styles.plantRow}>
                   <View style={styles.plantIcon}><MaterialCommunityIcons accessible={false} name="sprout" size={25} color="#2F6B45" /></View>
                   <View style={styles.plantCopy}>
                     <Text style={styles.plantName}>{plant.name}</Text>
-                    <Text style={styles.plantStatus}>{mood.label} · {plant.nextCare}</Text>
+                    <CareStatusBadge plant={{ ...plant, statusLabel: status.label, statusTone: status.tone }} />
                   </View>
-                  <MaterialCommunityIcons accessible={false} name="chevron-right" size={22} color="#91A398" />
-                </Pressable>
+                  <WateringButton
+                    compact
+                    loading={operationPlantId === plant.id}
+                    onPress={() => updateWateringDate(plant.id)}
+                    plantName={plant.name}
+                  />
+                </View>
               );
             })}
           </>
@@ -131,6 +144,8 @@ const styles = StyleSheet.create({
   waterIcon: { bottom: 40, position: 'absolute', right: 3 },
   quickActions: { marginTop: 16 },
   addAction: { alignItems: 'center', backgroundColor: '#FFFFFF', borderColor: '#DDEBE0', borderRadius: 18, borderWidth: 1, flexDirection: 'row', minHeight: 76, padding: 12 },
+  guideAction: { alignItems: 'center', backgroundColor: '#FFF8E7', borderRadius: 18, flexDirection: 'row', marginTop: 10, minHeight: 60, paddingHorizontal: 16 },
+  guideText: { color: '#725C2A', flex: 1, fontSize: 15, fontWeight: '700', marginLeft: 10 },
   actionIcon: { alignItems: 'center', backgroundColor: '#2F6B45', borderRadius: 14, height: 50, justifyContent: 'center', width: 50 },
   actionCopy: { flex: 1, marginLeft: 13 },
   actionTitle: { color: '#173A28', fontSize: 16, fontWeight: '800' },

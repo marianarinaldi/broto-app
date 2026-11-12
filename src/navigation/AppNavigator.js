@@ -6,6 +6,8 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import AddPlantScreen from '../screens/AddPlantScreen';
 import MyPlantsScreen from '../screens/MyPlantsScreen';
 import PlantDetailScreen from '../screens/PlantDetailScreen';
+import PlantGuideScreen from '../screens/PlantGuideScreen';
+import CatalogSpeciesScreen from '../screens/CatalogSpeciesScreen';
 import TodayScreen from '../screens/TodayScreen';
 
 const Stack = createNativeStackNavigator();
@@ -46,6 +48,8 @@ export default function AppNavigator() {
         <Stack.Screen name="Principal" component={MainTabs} options={{ headerShown: false }} />
         <Stack.Screen name="Detalhes da planta" component={PlantDetailScreen} />
         <Stack.Screen name="Adicionar planta" component={AddPlantScreen} />
+        <Stack.Screen name="Guia de cuidados" component={PlantGuideScreen} />
+        <Stack.Screen name="Cadastrar espécie" component={CatalogSpeciesScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

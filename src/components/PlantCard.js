@@ -1,14 +1,19 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import CareStatusBadge from './CareStatusBadge';
+import WateringButton from './WateringButton';
+import { getWateringStatus } from '../utils/watering';
 
-export default function PlantCard({ plant, onPress }) {
+export default function PlantCard({ plant, onPress, onWatering, loading }) {
+  const status = getWateringStatus(plant);
   return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={`Abrir detalhes de ${plant.name}`}
-      onPress={onPress}
-      style={({ pressed }) => [styles.card, pressed && styles.pressed]}
-    >
+    <View style={styles.card}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`Abrir detalhes de ${plant.name}`}
+        onPress={onPress}
+        style={({ pressed }) => [styles.main, pressed && styles.pressed]}
+      >
       {plant.imageUri ? (
         <Image
           accessible={false}
@@ -23,10 +28,12 @@ export default function PlantCard({ plant, onPress }) {
       <View accessible={false} style={styles.info}>
         <Text style={styles.name}>{plant.name}</Text>
         <Text style={styles.meta}>{plant.species}</Text>
-        <Text style={styles.meta}>Próximo cuidado: {plant.nextCare}</Text>
+        <CareStatusBadge plant={{ ...plant, statusLabel: status.label, statusTone: status.tone }} />
       </View>
-      <MaterialCommunityIcons accessible={false} name="chevron-right" size={24} color="#7B8D7D" />
-    </Pressable>
+        <MaterialCommunityIcons accessible={false} name="chevron-right" size={24} color="#7B8D7D" />
+      </Pressable>
+      <WateringButton compact loading={loading} onPress={onWatering} plantName={plant.name} />
+    </View>
   );
 }
 
@@ -39,6 +46,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     padding: 16,
   },
+  main: { alignItems: 'center', flex: 1, flexDirection: 'row' },
   pressed: {
     opacity: 0.75,
   },

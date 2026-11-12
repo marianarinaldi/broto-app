@@ -1,21 +1,27 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { ActivityIndicator, Alert, Animated, Image, Pressable, StyleSheet, Text, View } from 'react-native';
-import { useRef, useState } from 'react';
+import { Alert, Animated, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useState } from 'react';
 
+import CareStatusBadge from '../components/CareStatusBadge';
+import PlantCareCard from '../components/PlantCareCard';
 import ScreenContainer from '../components/ScreenContainer';
+import WateringButton from '../components/WateringButton';
 import { usePlants } from '../context/PlantsContext';
 import { getPlantMood } from '../utils/plantMood';
+import { getWateringStatus } from '../utils/watering';
 
 export default function PlantDetailScreen({ navigation, route }) {
-  const plant = route.params?.plant ?? {
+  const routePlant = route.params?.plant ?? {
     name: 'Minha planta',
     species: 'Espécie não informada',
     nextCare: 'Não definido',
   };
-  const { deletePlant, updateWateringDate, operationLoading } = usePlants();
+  const { plants, deletePlant, updateWateringDate, operationLoading } = usePlants();
+  const plant = plants.find((item) => item.id === routePlant.id) ?? routePlant;
   const mood = getPlantMood(plant);
-  const scale = useRef(new Animated.Value(1)).current;
+  const status = getWateringStatus(plant);
+  const [scale] = useState(() => new Animated.Value(1));
   const [successMessage, setSuccessMessage] = useState('');
 
   const handleWatering = async () => {
@@ -27,7 +33,7 @@ export default function PlantDetailScreen({ navigation, route }) {
       ]).start();
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setSuccessMessage('Rega registrada! Sua planta agradece. 🌿');
-    } catch (error) {
+    } catch {
       Alert.alert('Erro', 'Não foi possível registrar a rega.');
     }
   };
@@ -42,7 +48,7 @@ export default function PlantDetailScreen({ navigation, route }) {
           try {
             await deletePlant(plant.id);
             navigation.goBack();
-          } catch (error) {
+          } catch {
             Alert.alert('Erro', 'Não foi possível excluir a planta.');
           }
         },
@@ -52,7 +58,7 @@ export default function PlantDetailScreen({ navigation, route }) {
 
   return (
     <ScreenContainer>
-      <View style={styles.content}>
+      <ScrollView contentContainerStyle={styles.content}>
         <View
           accessibilityLabel={`Imagem de ${plant.name}`}
           accessibilityRole="image"
@@ -88,12 +94,13 @@ export default function PlantDetailScreen({ navigation, route }) {
           </View>
         </View>
 
-        <View
-          accessibilityLabel={`Próximo cuidado: ${plant.nextCare}`}
-          style={styles.infoCard}
-        >
-          <Text accessible={false} style={styles.label}>Próximo cuidado</Text>
-          <Text accessible={false} style={styles.value}>{plant.nextCare}</Text>
+        <View style={styles.infoCard}>
+          <Text style={styles.label}>Próximo cuidado</Text>
+          <CareStatusBadge plant={{ ...plant, statusLabel: status.label, statusTone: status.tone }} />
+          <Text style={styles.value}>{plant.nextCare || status.label}</Text>
+          <Text style={styles.lastWatered}>
+            Última rega: {plant.lastWateredDate ? new Date(plant.lastWateredDate).toLocaleDateString('pt-BR') : 'Ainda não registrada'}
+          </Text>
         </View>
         {!!successMessage && (
           <View
@@ -105,24 +112,15 @@ export default function PlantDetailScreen({ navigation, route }) {
             <Text accessible={false} style={styles.successText}>{successMessage}</Text>
           </View>
         )}
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={`Registrar rega de ${plant.name}`}
-          accessibilityHint="Atualiza a data da última rega e sua pontuação"
-          accessibilityState={{ busy: operationLoading, disabled: operationLoading }}
-          onPress={handleWatering}
-          disabled={operationLoading}
-          style={({ pressed }) => [styles.primaryButton, pressed && styles.pressed]}
-        >
-          {operationLoading ? (
-            <ActivityIndicator
-              accessibilityLabel="Registrando a rega"
-              color="#FFFFFF"
-            />
-          ) : (
-            <Text accessible={false} style={styles.buttonText}>Registrar rega</Text>
-          )}
-        </Pressable>
+        <WateringButton loading={operationLoading} onPress={handleWatering} plantName={plant.name} />
+        {plant.lightType && plant.environment && (
+          <PlantCareCard
+            environment={plant.environment}
+            fertilizationNotes="Consulte o guia para ver a recomendação de adubação."
+            lightType={plant.lightType}
+            wateringIntervalDays={plant.wateringFrequency || '?'}
+          />
+        )}
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={`Editar ${plant.name}`}
@@ -142,7 +140,7 @@ export default function PlantDetailScreen({ navigation, route }) {
         >
           <Text accessible={false} style={styles.deleteText}>Excluir planta</Text>
         </Pressable>
-      </View>
+      </ScrollView>
     </ScreenContainer>
   );
 }
@@ -162,8 +160,7 @@ const styles = StyleSheet.create({
   value: { color: '#2F6B45', fontSize: 18, fontWeight: '700', marginTop: 6 },
   successBanner: { alignItems: 'center', backgroundColor: '#E4F1E5', borderRadius: 14, flexDirection: 'row', marginTop: 20, padding: 14 },
   successText: { color: '#21613B', flex: 1, fontSize: 14, fontWeight: '700', marginLeft: 10 },
-  primaryButton: { alignItems: 'center', backgroundColor: '#2F6B45', borderRadius: 14, justifyContent: 'center', marginTop: 16, minHeight: 56, padding: 15 },
-  buttonText: { color: '#FFFFFF', fontSize: 15, fontWeight: '700' },
+  lastWatered: { color: '#718378', fontSize: 13, marginTop: 10 },
   secondaryButton: { alignItems: 'center', borderColor: '#2F6B45', borderRadius: 14, borderWidth: 1, justifyContent: 'center', marginTop: 12, minHeight: 56, padding: 14 },
   secondaryText: { color: '#2F6B45', fontSize: 15, fontWeight: '700' },
   deleteButton: { alignItems: 'center', justifyContent: 'center', marginTop: 18, minHeight: 52, padding: 10 },

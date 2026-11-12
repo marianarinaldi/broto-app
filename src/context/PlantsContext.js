@@ -15,6 +15,7 @@ export function PlantsProvider({ children }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [operationLoading, setOperationLoading] = useState(false);
+  const [operationPlantId, setOperationPlantId] = useState(null);
 
   const loadPlants = useCallback(async () => {
     setLoading(true);
@@ -23,7 +24,7 @@ export function PlantsProvider({ children }) {
       const loadedPlants = await getPlants();
       setPlants(loadedPlants);
       return loadedPlants;
-    } catch (loadError) {
+    } catch {
       setError('Não foi possível carregar suas plantas.');
       return [];
     } finally {
@@ -32,6 +33,8 @@ export function PlantsProvider({ children }) {
   }, []);
 
   useEffect(() => {
+    // This effect synchronizes the global store with the remote Firestore source.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadPlants();
   }, [loadPlants]);
 
@@ -69,21 +72,24 @@ export function PlantsProvider({ children }) {
 
   const updateWateringDate = useCallback(async (plantId) => {
     setOperationLoading(true);
+    setOperationPlantId(plantId);
     setError('');
     try {
       const result = await updateWateringDateService(plantId);
       setPlants((currentPlants) =>
         currentPlants.map((plant) =>
           plant.id === plantId
-            ? { ...plant, lastWateredDate: result.lastWateredDate }
+            ? { ...plant, ...result }
             : plant,
         ),
       );
+      return result;
     } catch (wateringError) {
       setError('Não foi possível registrar a rega.');
       throw wateringError;
     } finally {
       setOperationLoading(false);
+      setOperationPlantId(null);
     }
   }, []);
 
@@ -107,6 +113,7 @@ export function PlantsProvider({ children }) {
       loading,
       error,
       operationLoading,
+      operationPlantId,
       loadPlants,
       createPlant,
       updatePlant,
@@ -118,6 +125,7 @@ export function PlantsProvider({ children }) {
       loading,
       error,
       operationLoading,
+      operationPlantId,
       loadPlants,
       createPlant,
       updatePlant,
