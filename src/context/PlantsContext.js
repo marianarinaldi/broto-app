@@ -1,0 +1,179 @@
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+
+import {
+  createPlant as createPlantService,
+  deletePlant as deletePlantService,
+  getPlants,
+  updatePlant as updatePlantService,
+  updateWateringDate as updateWateringDateService,
+} from '../services/plantService';
+
+const PlantsContext = createContext(null);
+
+export function PlantsProvider({ children }) {
+  const [plants, setPlants] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [operationLoading, setOperationLoading] = useState(false);
+  const [operationPlantId, setOperationPlantId] = useState(null);
+  const loadingRequestRef = useRef(null);
+  const lastLoadedAtRef = useRef(0);
+  const plantsRef = useRef(plants);
+
+  const loadPlants = useCallback(async ({ force = false, silent = false } = {}) => {
+    const cacheAge = Date.now() - lastLoadedAtRef.current;
+    if (!force && silent && cacheAge < 30_000) {
+      return plantsRef.current;
+    }
+
+    if (loadingRequestRef.current) {
+      return loadingRequestRef.current;
+    }
+
+    if (!silent) setLoading(true);
+    setError('');
+    const request = getPlants()
+      .then((loadedPlants) => {
+        setPlants(loadedPlants);
+        plantsRef.current = loadedPlants;
+        lastLoadedAtRef.current = Date.now();
+        return loadedPlants;
+      })
+      .catch(() => {
+        setError('Não foi possível carregar suas plantas.');
+        return [];
+      })
+      .finally(() => {
+        loadingRequestRef.current = null;
+        if (!silent) setLoading(false);
+      });
+
+    loadingRequestRef.current = request;
+    return request;
+  }, []);
+
+  useEffect(() => {
+    // This effect synchronizes the global store with the remote Firestore source.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    loadPlants();
+  }, [loadPlants]);
+
+  const createPlant = useCallback(async (plantData) => {
+    setOperationLoading(true);
+    setError('');
+    try {
+      const createdPlant = await createPlantService(plantData);
+      setPlants((currentPlants) => {
+        const nextPlants = [...currentPlants, createdPlant];
+        plantsRef.current = nextPlants;
+        return nextPlants;
+      });
+      return createdPlant;
+    } catch (createError) {
+      setError(createError.message || 'Não foi possível salvar a planta.');
+      throw createError;
+    } finally {
+      setOperationLoading(false);
+    }
+  }, []);
+
+  const updatePlant = useCallback(async (plantId, plantData) => {
+    setOperationLoading(true);
+    setError('');
+    try {
+      const updatedPlant = await updatePlantService(plantId, plantData);
+      setPlants((currentPlants) => {
+        const nextPlants = currentPlants.map((plant) => (
+          plant.id === plantId ? { ...plant, ...updatedPlant } : plant
+        ));
+        plantsRef.current = nextPlants;
+        return nextPlants;
+      });
+      return updatedPlant;
+    } catch (updateError) {
+      setError(updateError.message || 'Não foi possível atualizar a planta.');
+      throw updateError;
+    } finally {
+      setOperationLoading(false);
+    }
+  }, []);
+
+  const updateWateringDate = useCallback(async (plantId) => {
+    setOperationLoading(true);
+    setOperationPlantId(plantId);
+    setError('');
+    try {
+      const currentPlant = plantsRef.current.find((plant) => plant.id === plantId);
+      const result = await updateWateringDateService(plantId, currentPlant?.wateringFrequency);
+      setPlants((currentPlants) => {
+        const nextPlants = currentPlants.map((plant) => (
+          plant.id === plantId ? { ...plant, ...result } : plant
+        ));
+        plantsRef.current = nextPlants;
+        return nextPlants;
+      });
+      return result;
+    } catch (wateringError) {
+      setError('Não foi possível registrar a rega.');
+      throw wateringError;
+    } finally {
+      setOperationLoading(false);
+      setOperationPlantId(null);
+    }
+  }, []);
+
+  const deletePlant = useCallback(async (plantId) => {
+    setOperationLoading(true);
+    setError('');
+    try {
+      await deletePlantService(plantId);
+      setPlants((currentPlants) => {
+        const nextPlants = currentPlants.filter((plant) => plant.id !== plantId);
+        plantsRef.current = nextPlants;
+        return nextPlants;
+      });
+    } catch (deleteError) {
+      setError('Não foi possível excluir a planta.');
+      throw deleteError;
+    } finally {
+      setOperationLoading(false);
+    }
+  }, []);
+
+  const value = useMemo(
+    () => ({
+      plants,
+      loading,
+      error,
+      operationLoading,
+      operationPlantId,
+      loadPlants,
+      createPlant,
+      updatePlant,
+      updateWateringDate,
+      deletePlant,
+    }),
+    [
+      plants,
+      loading,
+      error,
+      operationLoading,
+      operationPlantId,
+      loadPlants,
+      createPlant,
+      updatePlant,
+      updateWateringDate,
+      deletePlant,
+    ],
+  );
+
+  return <PlantsContext.Provider value={value}>{children}</PlantsContext.Provider>;
+}
+
+export function usePlants() {
+  const context = useContext(PlantsContext);
+  if (!context) {
+    throw new Error('usePlants deve ser usado dentro de PlantsProvider.');
+  }
+  return context;
+}
