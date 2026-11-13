@@ -95,6 +95,21 @@ export default function AddPlantScreen({ navigation, route }) {
     navigation.navigate("Cadastrar espécie", { returnToPlantForm: true });
   };
 
+  const handleImageResult = async (result) => {
+    if (result.canceled) return;
+
+    const sourceUri = result.assets[0]?.uri;
+    if (!sourceUri) {
+      Alert.alert("Erro", "Não foi possível acessar a foto selecionada.");
+      return;
+    }
+
+    setImageUri(sourceUri);
+    Haptics.selectionAsync().catch((error) => {
+      console.warn("Não foi possível emitir feedback tátil:", error);
+    });
+  };
+
   const handlePickImage = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
@@ -112,11 +127,7 @@ export default function AddPlantScreen({ navigation, route }) {
       mediaTypes: ["images"],
       quality: 0.5,
     });
-
-    if (!result.canceled) {
-      setImageUri(result.assets[0].uri);
-      Haptics.selectionAsync();
-    }
+    await handleImageResult(result);
   };
 
   const handleTakePhoto = async () => {
@@ -135,11 +146,7 @@ export default function AddPlantScreen({ navigation, route }) {
       exif: false,
       quality: 0.5,
     });
-
-    if (!result.canceled) {
-      setImageUri(result.assets[0].uri);
-      Haptics.selectionAsync();
-    }
+    await handleImageResult(result);
   };
 
   const handleSave = async () => {
@@ -189,8 +196,11 @@ export default function AddPlantScreen({ navigation, route }) {
       schedulePlantReminder({ plantName: data.name, date: nextCareDate }).catch((notificationError) => {
         console.warn("Não foi possível agendar o lembrete:", notificationError);
       });
-    } catch {
-      Alert.alert("Erro", "Não foi possível salvar a planta. Tente novamente.");
+    } catch (saveError) {
+      Alert.alert(
+        "Não foi possível salvar",
+        saveError.message || "Verifique sua conexão com o Firebase e tente novamente.",
+      );
     }
   };
 
@@ -347,9 +357,10 @@ export default function AddPlantScreen({ navigation, route }) {
             <DateTimePicker
               minimumDate={new Date()}
               mode="date"
-              onChange={(event, date) => {
-                setShowDatePicker(Platform.OS === "ios");
+              onDismiss={() => setShowDatePicker(false)}
+              onValueChange={(event, date) => {
                 if (date) setNextCareDate(date);
+                if (Platform.OS === "android") setShowDatePicker(false);
               }}
               value={nextCareDate}
             />

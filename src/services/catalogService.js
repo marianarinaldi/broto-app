@@ -4,7 +4,17 @@ import { db } from '../config/firebaseConfig';
 import { PLANT_CATALOG_SEED } from '../constants/plantCatalogData';
 
 const CATALOG_COLLECTION = 'plant_catalog';
+const FIRESTORE_OPERATION_TIMEOUT_MS = 15_000;
 const catalogCollection = collection(db, CATALOG_COLLECTION);
+
+function withTimeout(operation, message) {
+  let timeoutId;
+  const timeout = new Promise((_, reject) => {
+    timeoutId = setTimeout(() => reject(new Error(message)), FIRESTORE_OPERATION_TIMEOUT_MS);
+  });
+
+  return Promise.race([operation, timeout]).finally(() => clearTimeout(timeoutId));
+}
 
 const toCatalogItem = (snapshot) => ({
   ...snapshot.data(),
@@ -14,14 +24,20 @@ const toCatalogItem = (snapshot) => ({
 export async function seedPlantCatalog() {
   const catalogRef = collection(db, CATALOG_COLLECTION);
   await Promise.all(
-    PLANT_CATALOG_SEED.map((plant) => setDoc(doc(catalogRef, plant.id), plant, { merge: true })),
+    PLANT_CATALOG_SEED.map((plant) => withTimeout(
+      setDoc(doc(catalogRef, plant.id), plant, { merge: true }),
+      'A restauração do catálogo demorou mais que o esperado.',
+    )),
   );
   return PLANT_CATALOG_SEED;
 }
 
 export async function getPlantCatalog() {
   try {
-    const snapshot = await getDocs(collection(db, CATALOG_COLLECTION));
+    const snapshot = await withTimeout(
+      getDocs(collection(db, CATALOG_COLLECTION)),
+      'O carregamento do catálogo demorou mais que o esperado.',
+    );
     if (snapshot.empty) {
       seedPlantCatalog().catch((error) => {
         console.warn('Não foi possível fazer o seed do catálogo no Firestore:', error);
@@ -47,15 +63,24 @@ export async function createCatalogPlant(plantData) {
     source: 'user',
     createdAt: new Date().toISOString(),
   };
-  const snapshot = await addDoc(catalogCollection, document);
+  const snapshot = await withTimeout(
+    addDoc(catalogCollection, document),
+    'O cadastro da espécie demorou mais que o esperado.',
+  );
   return { id: snapshot.id, ...document };
 }
 
 export async function updateCatalogPlant(plantId, plantData) {
-  await updateDoc(doc(db, CATALOG_COLLECTION, plantId), plantData);
+  await withTimeout(
+    updateDoc(doc(db, CATALOG_COLLECTION, plantId), plantData),
+    'A atualização da espécie demorou mais que o esperado.',
+  );
   return { id: plantId, ...plantData };
 }
 
 export async function deleteCatalogPlant(plantId) {
-  await deleteDoc(doc(db, CATALOG_COLLECTION, plantId));
+  await withTimeout(
+    deleteDoc(doc(db, CATALOG_COLLECTION, plantId)),
+    'A exclusão da espécie demorou mais que o esperado.',
+  );
 }

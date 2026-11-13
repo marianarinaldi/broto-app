@@ -4,6 +4,7 @@ import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, Text
 
 import ScreenContainer from '../components/ScreenContainer';
 import { createCatalogPlant, updateCatalogPlant } from '../services/catalogService';
+import { formatDisplayValue } from '../utils/display';
 
 export default function CatalogSpeciesScreen({ navigation, route }) {
   const existingPlant = route.params?.catalogPlant;
@@ -110,7 +111,7 @@ export default function CatalogSpeciesScreen({ navigation, route }) {
         <View style={styles.options}>
           {['interno', 'externo'].map((value) => (
             <Pressable key={value} onPress={() => setEnvironment(value)} style={[styles.option, environment === value && styles.optionActive]}>
-              <Text style={[styles.optionText, environment === value && styles.optionTextActive]}>{value}</Text>
+              <Text style={[styles.optionText, environment === value && styles.optionTextActive]}>{formatDisplayValue(value)}</Text>
             </Pressable>
           ))}
         </View>

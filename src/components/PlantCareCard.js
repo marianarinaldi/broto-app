@@ -1,5 +1,6 @@
 import { Feather, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { StyleSheet, Text, View } from 'react-native';
+import { formatDisplayValue } from '../utils/display';
 
 export default function PlantCareCard({
   lightType,
@@ -11,7 +12,7 @@ export default function PlantCareCard({
 }) {
   const environmentLabel = environment === 'interno' ? 'Ambiente interno' : environment === 'externo' ? 'Ambiente externo' : 'Interno ou externo';
   const environmentIcon = environment === 'interno' ? 'home-outline' : 'tree-outline';
-  const readableLight = lightRequirement || lightType;
+  const readableLight = formatDisplayValue(lightRequirement || lightType);
   const fertilization = fertilizationTips || fertilizationNotes;
 
   return (

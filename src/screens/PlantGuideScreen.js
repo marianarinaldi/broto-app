@@ -6,6 +6,7 @@ import PlantCareCard from '../components/PlantCareCard';
 import ScreenContainer from '../components/ScreenContainer';
 import { PLANT_CATALOG_SEED } from '../constants/plantCatalogData';
 import { deleteCatalogPlant, getPlantCatalog, restorePlantCatalog } from '../services/catalogService';
+import { formatDisplayValue } from '../utils/display';
 
 const filters = [
   { id: 'all', label: 'Todas' },
@@ -129,7 +130,7 @@ export default function PlantGuideScreen({ navigation }) {
             <View style={styles.plantIcon}><MaterialCommunityIcons name={item.icon} size={28} color="#2F6B45" /></View>
             <View style={styles.plantCopy}>
               <Text style={styles.plantName}>{item.name}</Text>
-              <Text style={styles.plantMeta}>{item.category} · {item.environmentLabel}</Text>
+              <Text style={styles.plantMeta}>{formatDisplayValue(item.category)} · {item.environmentLabel || formatDisplayValue(item.environment)}</Text>
               <Text style={styles.plantMeta}>Rega a cada {item.wateringIntervalDays} dias</Text>
             </View>
             <MaterialCommunityIcons name="chevron-right" size={23} color="#8A9B90" />
@@ -145,7 +146,7 @@ export default function PlantGuideScreen({ navigation }) {
               </Pressable>
               <View style={styles.modalIcon}><MaterialCommunityIcons name={selectedPlant.icon} size={54} color="#2F6B45" /></View>
               <Text accessibilityRole="header" style={styles.modalTitle}>{selectedPlant.name}</Text>
-              <Text style={styles.modalCategory}>{selectedPlant.category}</Text>
+              <Text style={styles.modalCategory}>{formatDisplayValue(selectedPlant.category)}</Text>
               <PlantCareCard {...selectedPlant} />
               <Text style={styles.tipTitle}>Dica de rega</Text>
               <Text style={styles.tipText}>{selectedPlant.wateringTips}</Text>

@@ -1,7 +1,7 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { useCallback } from 'react';
-import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import EmptyPlantsState from '../components/EmptyPlantsState';
 import FeedbackState from '../components/FeedbackState';
@@ -12,6 +12,13 @@ import { usePlants } from '../context/PlantsContext';
 
 export default function MyPlantsScreen({ navigation }) {
   const { plants, loading, error, loadPlants, operationPlantId, updateWateringDate } = usePlants();
+  const handleWatering = async (plantId) => {
+    try {
+      await updateWateringDate(plantId);
+    } catch (wateringError) {
+      Alert.alert('Não foi possível registrar a rega', wateringError.message);
+    }
+  };
 
   useFocusEffect(useCallback(() => {
     loadPlants({ silent: true });
@@ -65,7 +72,7 @@ export default function MyPlantsScreen({ navigation }) {
             key={plant.id}
             plant={plant}
             onPress={() => navigation.navigate('Detalhes da planta', { plant })}
-            onWatering={() => updateWateringDate(plant.id)}
+            onWatering={() => handleWatering(plant.id)}
             loading={operationPlantId === plant.id}
           />
         ))}

@@ -63,10 +63,14 @@ export function PlantsProvider({ children }) {
     setError('');
     try {
       const createdPlant = await createPlantService(plantData);
-      setPlants((currentPlants) => [...currentPlants, createdPlant]);
+      setPlants((currentPlants) => {
+        const nextPlants = [...currentPlants, createdPlant];
+        plantsRef.current = nextPlants;
+        return nextPlants;
+      });
       return createdPlant;
     } catch (createError) {
-      setError('Não foi possível salvar a planta.');
+      setError(createError.message || 'Não foi possível salvar a planta.');
       throw createError;
     } finally {
       setOperationLoading(false);
@@ -78,12 +82,16 @@ export function PlantsProvider({ children }) {
     setError('');
     try {
       const updatedPlant = await updatePlantService(plantId, plantData);
-      setPlants((currentPlants) =>
-        currentPlants.map((plant) => (plant.id === plantId ? { ...plant, ...updatedPlant } : plant)),
-      );
+      setPlants((currentPlants) => {
+        const nextPlants = currentPlants.map((plant) => (
+          plant.id === plantId ? { ...plant, ...updatedPlant } : plant
+        ));
+        plantsRef.current = nextPlants;
+        return nextPlants;
+      });
       return updatedPlant;
     } catch (updateError) {
-      setError('Não foi possível atualizar a planta.');
+      setError(updateError.message || 'Não foi possível atualizar a planta.');
       throw updateError;
     } finally {
       setOperationLoading(false);
@@ -95,14 +103,15 @@ export function PlantsProvider({ children }) {
     setOperationPlantId(plantId);
     setError('');
     try {
-      const result = await updateWateringDateService(plantId);
-      setPlants((currentPlants) =>
-        currentPlants.map((plant) =>
-          plant.id === plantId
-            ? { ...plant, ...result }
-            : plant,
-        ),
-      );
+      const currentPlant = plantsRef.current.find((plant) => plant.id === plantId);
+      const result = await updateWateringDateService(plantId, currentPlant?.wateringFrequency);
+      setPlants((currentPlants) => {
+        const nextPlants = currentPlants.map((plant) => (
+          plant.id === plantId ? { ...plant, ...result } : plant
+        ));
+        plantsRef.current = nextPlants;
+        return nextPlants;
+      });
       return result;
     } catch (wateringError) {
       setError('Não foi possível registrar a rega.');
@@ -118,7 +127,11 @@ export function PlantsProvider({ children }) {
     setError('');
     try {
       await deletePlantService(plantId);
-      setPlants((currentPlants) => currentPlants.filter((plant) => plant.id !== plantId));
+      setPlants((currentPlants) => {
+        const nextPlants = currentPlants.filter((plant) => plant.id !== plantId);
+        plantsRef.current = nextPlants;
+        return nextPlants;
+      });
     } catch (deleteError) {
       setError('Não foi possível excluir a planta.');
       throw deleteError;

@@ -1,6 +1,6 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useMemo } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import ScreenContainer from '../components/ScreenContainer';
 import CareStatusBadge from '../components/CareStatusBadge';
@@ -28,6 +28,13 @@ export default function TodayScreen({ navigation }) {
     day: 'numeric',
     month: 'long',
   }).format(new Date());
+  const handleWatering = async (plantId) => {
+    try {
+      await updateWateringDate(plantId);
+    } catch (error) {
+      Alert.alert('Não foi possível registrar a rega', error.message);
+    }
+  };
 
   return (
     <ScreenContainer>
@@ -124,7 +131,7 @@ export default function TodayScreen({ navigation }) {
                   <WateringButton
                     compact
                     loading={operationPlantId === plant.id}
-                    onPress={() => updateWateringDate(plant.id)}
+                    onPress={() => handleWatering(plant.id)}
                     plantName={plant.name}
                   />
                 </View>

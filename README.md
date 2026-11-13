@@ -8,12 +8,9 @@ Este projeto foi desenvolvido para a disciplina de **Dispositivos Móveis**.
 
 ## Integrantes
 
-| Integrante          | Responsabilidades                       |
-| ------------------- | --------------------------------------- |
-| **Mariana Rinaldi** | Navegação, telas e estrutura            |
-| **Mariana Rinaldi** | Firebase e operações CRUD               |
-| **Mariana Rinaldi** | Formulários e experiência do usuário    |
-| **Mariana Rinaldi** | Recursos nativos, testes e documentação |
+| Integrante          | Responsabilidades                                                                                       |
+| ------------------- | ------------------------------------------------------------------------------------------------------- |
+| **Mariana Rinaldi** | Desenvolvimento completo: navegação, Firebase, formulários, UX, recursos nativos, testes e documentação |
 
 ## Funcionalidades
 
@@ -200,52 +197,24 @@ npx expo export --platform android
 Os testes cobrem o componente de recomendações, os ícones de cuidados, o
 cálculo da próxima rega e a classificação dos status de cuidado.
 
-## Roteiro para demonstração
-
-1. Abrir a tela **Hoje**.
-2. Cadastrar uma planta pelo botão **Adicionar planta**.
-3. Selecionar uma espécie no catálogo.
-4. Conferir o preenchimento dos cuidados recomendados.
-5. Adicionar uma foto pela câmera ou galeria.
-6. Salvar e mostrar a planta em **Minhas plantas**.
-7. Registrar uma rega diretamente no card.
-8. Mostrar a atualização da próxima rega e do status.
-9. Abrir os detalhes, editar e excluir a planta.
-10. Abrir o **Guia de cuidados**.
-11. Cadastrar uma nova espécie personalizada.
-12. Mostrar a busca, os filtros e a restauração do catálogo.
-
 ## Screenshots e vídeo
 
-Adicione as capturas reais em `docs/screenshots/` e atualize os caminhos:
+### Tela inicial
 
-- `docs/screenshots/tela-hoje.png`
-- `docs/screenshots/minhas-plantas.png`
-- `docs/screenshots/cadastro-planta.png`
-- `docs/screenshots/guia-cuidados.png`
+![Tela inicial](./docs/screenshots/tela-hoje.png)
 
-Link do vídeo de demonstração de 3 a 5 minutos:
+### Minhas plantas
 
-> **Preencher com o link do vídeo antes da entrega.**
+![Minhas plantas](./docs/screenshots/minhas-plantas.png)
 
-## Checklist de entrega
+### Cadastro de planta
 
-- [x] Substituir os nomes dos integrantes.
-- [ ] Adicionar screenshots reais.
-- [ ] Adicionar o link do vídeo.
-- [x] Confirmar que o repositório está acessível ao professor.
-- [ ] Executar lint, testes e export Android.
-- [ ] Conferir se as regras e a configuração do Firebase estão atualizadas.
-- [ ] Abrir um Pull Request da branch de funcionalidade para `develop`.
+![Cadastro de planta](./docs/screenshots/cadastro-planta.png)
 
-## Observação para publicação futura
+### Guia de cuidados
 
-Para publicar o aplicativo na Google Play, será necessário, além da versão
-acadêmica:
+![Guia de cuidados](./docs/screenshots/guia-cuidados.png)
 
-- Firebase Authentication e regras por usuário.
-- Firebase Storage para fotos.
-- Identificador Android definitivo.
-- Política de privacidade.
-- Build de produção no formato AAB.
-- Ícone, nome e informações de classificação do aplicativo.
+### Vídeo
+
+[Assistir ao vídeo de demonstração](https://drive.google.com/file/d/1YM5sCU_lB0A7deMaonGdF3bcUcMw-kYJ/view?usp=sharing)
