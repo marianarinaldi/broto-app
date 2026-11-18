@@ -1,7 +1,7 @@
 import { initializeApp } from 'firebase/app';
 import { initializeFirestore } from 'firebase/firestore';
 
-const firebaseConfig = {
+export const firebaseConfig = {
   apiKey: 'AIzaSyB8X_3zibbJpjlmboSq2NHmrkdlVC3_MLc',
   authDomain: 'broto-app-287bc.firebaseapp.com',
   projectId: 'broto-app-287bc',

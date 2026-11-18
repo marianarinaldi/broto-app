@@ -24,7 +24,14 @@
     },
     "plugins": [
       "@react-native-community/datetimepicker",
-      "expo-notifications"
+      "expo-notifications",
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": "Permitir o uso da câmera para fotografar suas plantas.",
+          "photosPermission": "Permitir o acesso às fotos para adicionar imagens das plantas."
+        }
+      ]
     ]
   }
 }

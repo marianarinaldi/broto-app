@@ -20,11 +20,15 @@ Este projeto foi desenvolvido para a disciplina de **Dispositivos Móveis**.
 - Registro de rega com atualização imediata da próxima rega.
 - Status de cuidado: atrasada, regar hoje, regar amanhã ou próxima rega.
 - Guia de cuidados com busca, filtros e detalhes por espécie.
+- Tela Hoje com resumo dinâmico dos cuidados atrasados, de hoje e futuros.
+- Busca e filtros funcionais em **Minhas plantas**.
+- Catálogo visual em grade no **Guia de cuidados**.
 - Inclusão de foto pela galeria ou câmera.
 - Lembretes locais de cuidados.
 - Feedback visual de carregamento, erro, sucesso e estado vazio.
 - Confirmação antes de operações destrutivas.
 - Interface acessível com labels, hints e alvos de toque adequados.
+- Paleta e espaçamentos centralizados em `src/constants/theme.js`.
 
 ## Tecnologias
 
@@ -46,6 +50,11 @@ Este projeto foi desenvolvido para a disciplina de **Dispositivos Móveis**.
   utilitários.
 - Componentes reutilizáveis para cards, botões de rega, status, seleção de
   espécies e estados de feedback.
+- Sistema visual Botanical Minimalism com identidade verde unificada.
+- Resumo visual dos cuidados na tela Hoje.
+- Busca e filtros em **Minhas plantas**.
+- Catálogo visual em grade no **Guia de cuidados**.
+- Cards com estado vazio e fallback visual para plantas sem foto.
 - Layout responsivo utilizando Flexbox.
 - Feedbacks visuais para carregamento, erro, sucesso e ausência de dados.
 
@@ -99,6 +108,10 @@ src/
 ├── utils/        # Regras de negócio e datas
 └── __tests__/    # Testes automatizados
 ```
+
+Os principais componentes reutilizáveis incluem `CareStatusBadge`,
+`WateringButton`, `PlantCareCard`, `SpeciesSelector`, `SearchBar`,
+`FilterChip`, `CareSummaryCard`, `PlantCard` e `PlantCatalogCard`.
 
 ## Pré-requisitos
 
@@ -184,6 +197,38 @@ O usuário pode:
 - editar e excluir espécies cadastradas pelo usuário;
 - restaurar o catálogo padrão.
 
+## Telas principais
+
+### Hoje
+
+A tela inicial apresenta um resumo dinâmico dos cuidados:
+
+- plantas atrasadas;
+- plantas que precisam de rega hoje;
+- próximos cuidados.
+
+Ela também oferece ações rápidas para cadastrar uma planta ou abrir o guia,
+mostra as plantas prioritárias e permite registrar a rega diretamente no card.
+
+### Minhas plantas
+
+A tela de coleção pessoal permite pesquisar plantas pelo nome ou espécie e
+filtrar por:
+
+- Todas;
+- Atrasadas;
+- Regar hoje;
+- Próximas.
+
+Os cards exibem foto ou fallback, nome personalizado, espécie e status do
+próximo cuidado.
+
+### Guia de cuidados
+
+O guia apresenta as espécies em um catálogo visual em grade. Há busca,
+filtros por ambiente, cadastro de espécies personalizadas, edição e exclusão
+das espécies criadas pelo usuário e restauração confirmada do catálogo padrão.
+
 ## Testes e validação
 
 Execute os comandos abaixo antes da entrega:
@@ -197,11 +242,24 @@ npx expo export --platform android
 Os testes cobrem o componente de recomendações, os ícones de cuidados, o
 cálculo da próxima rega e a classificação dos status de cuidado.
 
+O redesign também deve ser validado manualmente nos seguintes fluxos:
+
+- busca de plantas por nome ou espécie;
+- filtros de cuidados;
+- registro de rega direta;
+- atualização da próxima data;
+- cadastro e edição de planta;
+- navegação para detalhes;
+- busca e filtros do catálogo;
+- cadastro e edição de espécie;
+- restauração do catálogo;
+- estados vazios e estados de erro.
+
 ## Screenshots e vídeo
 
 ### Tela inicial
 
-![Tela inicial](./docs/screenshots/tela-hoje.png)
+![Tela inicial](./docs/screenshots/inicial.png)
 
 ### Minhas plantas
 
@@ -209,12 +267,16 @@ cálculo da próxima rega e a classificação dos status de cuidado.
 
 ### Cadastro de planta
 
-![Cadastro de planta](./docs/screenshots/cadastro-planta.png)
+![Cadastro de planta](./docs/screenshots/cadastrar-planta.png)
 
 ### Guia de cuidados
 
 ![Guia de cuidados](./docs/screenshots/guia-cuidados.png)
 
+### Cadastro de espécie
+
+![Cadastro de espécie](./docs/screenshots/cadastrar-especie.png)
+
 ### Vídeo
 
-[Assistir ao vídeo de demonstração](https://drive.google.com/file/d/1YM5sCU_lB0A7deMaonGdF3bcUcMw-kYJ/view?usp=sharing)
+[Assistir ao vídeo de demonstração](https://drive.google.com/file/d/1CGDwQGzo37O8LxlHNpQnmnnlAm79F9Th/view?usp=sharing)

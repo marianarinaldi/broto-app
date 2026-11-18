@@ -7,9 +7,9 @@ export default function EmptyPlantsState({ onAdd, onGuide }) {
       <View style={styles.illustration}>
         <MaterialCommunityIcons accessible={false} name="sprout-outline" size={64} color="#2F6B45" />
       </View>
-      <Text style={styles.title}>Seu jardim começa aqui</Text>
+      <Text style={styles.title}>Seu jardim começa aqui 🌱</Text>
       <Text style={styles.description}>
-        Cadastre sua primeira planta e receba lembretes para nunca esquecer de cuidar dela.
+        Adicione sua primeira planta e organize os cuidados.
       </Text>
       <Pressable
         accessibilityRole="button"
