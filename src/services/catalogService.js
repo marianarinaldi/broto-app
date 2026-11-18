@@ -1,11 +1,10 @@
-import { addDoc, collection, deleteDoc, doc, getDocs, setDoc, updateDoc } from 'firebase/firestore';
+import { collection, deleteDoc, doc, getDocs, setDoc, updateDoc } from 'firebase/firestore';
 
-import { db } from '../config/firebaseConfig';
+import { db, firebaseConfig } from '../config/firebaseConfig';
 import { PLANT_CATALOG_SEED } from '../constants/plantCatalogData';
 
 const CATALOG_COLLECTION = 'plant_catalog';
-const FIRESTORE_OPERATION_TIMEOUT_MS = 15_000;
-const catalogCollection = collection(db, CATALOG_COLLECTION);
+const FIRESTORE_OPERATION_TIMEOUT_MS = 12_000;
 
 function withTimeout(operation, message) {
   let timeoutId;
@@ -14,6 +13,19 @@ function withTimeout(operation, message) {
   });
 
   return Promise.race([operation, timeout]).finally(() => clearTimeout(timeoutId));
+}
+
+function getCatalogErrorMessage(error, fallback) {
+  if (error?.code === 'permission-denied') {
+    return 'O Firestore recusou o cadastro. Verifique as regras do banco.';
+  }
+  if (error?.code === 'unavailable') {
+    return 'O Firestore está indisponível. Verifique sua conexão e tente novamente.';
+  }
+  if (error?.message) {
+    return error.message;
+  }
+  return fallback;
 }
 
 const toCatalogItem = (snapshot) => ({
@@ -63,11 +75,47 @@ export async function createCatalogPlant(plantData) {
     source: 'user',
     createdAt: new Date().toISOString(),
   };
-  const snapshot = await withTimeout(
-    addDoc(catalogCollection, document),
-    'O cadastro da espécie demorou mais que o esperado.',
-  );
-  return { id: snapshot.id, ...document };
+  const id = `user-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+  const catalogRef = collection(db, CATALOG_COLLECTION);
+
+  try {
+    await withTimeout(
+      setDoc(doc(catalogRef, id), document),
+      'O cadastro da espécie demorou mais que o esperado.',
+    );
+    return { id, ...document };
+  } catch (error) {
+    if (error?.code === 'permission-denied') {
+      throw new Error(getCatalogErrorMessage(error, 'Não foi possível cadastrar a espécie.'));
+    }
+
+    const fields = {};
+    Object.entries(document).forEach(([key, value]) => {
+      if (typeof value === 'number') fields[key] = { integerValue: String(value) };
+      else if (typeof value === 'boolean') fields[key] = { booleanValue: value };
+      else if (Array.isArray(value)) fields[key] = { arrayValue: { values: value.map((item) => ({ stringValue: String(item) })) } };
+      else if (value !== null && value !== undefined) fields[key] = { stringValue: String(value) };
+    });
+
+    const response = await withTimeout(
+      fetch(
+        `https://firestore.googleapis.com/v1/projects/${firebaseConfig.projectId}/databases/(default)/documents/${CATALOG_COLLECTION}?documentId=${encodeURIComponent(id)}&key=${encodeURIComponent(firebaseConfig.apiKey)}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ fields }),
+        },
+      ),
+      'A conexão com o catálogo demorou mais que o esperado.',
+    );
+
+    if (!response.ok) {
+      const responseText = await response.text();
+      throw new Error(getCatalogErrorMessage(error, `Não foi possível cadastrar a espécie: ${responseText || response.status}`));
+    }
+
+    return { id, ...document };
+  }
 }
 
 export async function updateCatalogPlant(plantId, plantData) {

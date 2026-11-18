@@ -3,6 +3,7 @@ import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import CareStatusBadge from './CareStatusBadge';
 import WateringButton from './WateringButton';
 import { getWateringStatus } from '../utils/watering';
+import { colors, radii, spacing } from '../constants/theme';
 
 export default function PlantCard({ plant, onPress, onWatering, loading }) {
   const status = getWateringStatus(plant);
@@ -27,7 +28,7 @@ export default function PlantCard({ plant, onPress, onWatering, loading }) {
       )}
       <View accessible={false} style={styles.info}>
         <Text style={styles.name}>{plant.name}</Text>
-        <Text style={styles.meta}>{plant.species}</Text>
+        <Text style={styles.meta}>{plant.species || 'Espécie não informada'}</Text>
         <CareStatusBadge plant={{ ...plant, statusLabel: status.label, statusTone: status.tone }} />
       </View>
         <MaterialCommunityIcons accessible={false} name="chevron-right" size={24} color="#7B8D7D" />
@@ -40,11 +41,13 @@ export default function PlantCard({ plant, onPress, onWatering, loading }) {
 const styles = StyleSheet.create({
   card: {
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: radii.lg,
+    borderWidth: 1,
     flexDirection: 'row',
     marginBottom: 12,
-    padding: 16,
+    padding: spacing.md,
   },
   main: { alignItems: 'center', flex: 1, flexDirection: 'row' },
   pressed: {
@@ -52,15 +55,15 @@ const styles = StyleSheet.create({
   },
   iconContainer: {
     alignItems: 'center',
-    backgroundColor: '#E4F1E5',
-    borderRadius: 12,
+    backgroundColor: colors.primaryLight,
+    borderRadius: radii.sm,
     height: 56,
     justifyContent: 'center',
     marginRight: 12,
     width: 56,
   },
   image: {
-    borderRadius: 12,
+    borderRadius: radii.sm,
     height: 56,
     marginRight: 12,
     width: 56,
@@ -69,13 +72,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   name: {
-    color: '#183B25',
+    color: colors.text,
     fontSize: 17,
     fontWeight: '700',
     marginBottom: 4,
   },
   meta: {
-    color: '#6E7D70',
+    color: colors.muted,
     fontSize: 13,
     marginTop: 2,
   },

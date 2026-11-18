@@ -1,10 +1,14 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useEffect, useMemo, useState } from 'react';
-import { FlatList, Modal, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, FlatList, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
+import FilterChip from '../components/FilterChip';
 import PlantCareCard from '../components/PlantCareCard';
+import PlantCatalogCard from '../components/PlantCatalogCard';
+import SearchBar from '../components/SearchBar';
 import ScreenContainer from '../components/ScreenContainer';
 import { PLANT_CATALOG_SEED } from '../constants/plantCatalogData';
+import { colors, radii, spacing } from '../constants/theme';
 import { deleteCatalogPlant, getPlantCatalog, restorePlantCatalog } from '../services/catalogService';
 import { formatDisplayValue } from '../utils/display';
 
@@ -30,7 +34,7 @@ export default function PlantGuideScreen({ navigation }) {
     try {
       setCatalog(await getPlantCatalog());
     } catch {
-      setCatalogError('Não foi possível restaurar o catálogo agora.');
+      setCatalogError('Não foi possível carregar o catálogo agora.');
     } finally {
       setLoading(false);
     }
@@ -42,16 +46,51 @@ export default function PlantGuideScreen({ navigation }) {
     loadCatalog();
   }, []);
 
-  const handleRestoreCatalog = async () => {
-    setRestoring(true);
-    setCatalogError('');
-    try {
-      setCatalog(await restorePlantCatalog());
-    } catch {
-      setCatalogError('Não foi possível restaurar o catálogo. Verifique sua conexão e tente novamente.');
-    } finally {
-      setRestoring(false);
-    }
+  const handleRestoreCatalog = () => {
+    Alert.alert(
+      'Restaurar catálogo padrão',
+      'Os registros padrão serão reaplicados sem remover espécies personalizadas.',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Restaurar',
+          onPress: async () => {
+            setRestoring(true);
+            setCatalogError('');
+            try {
+              setCatalog(await restorePlantCatalog());
+            } catch {
+              setCatalogError('Não foi possível restaurar o catálogo. Verifique sua conexão e tente novamente.');
+            } finally {
+              setRestoring(false);
+            }
+          },
+        },
+      ],
+    );
+  };
+
+  const handleDelete = (plant) => {
+    Alert.alert(
+      'Excluir espécie',
+      `Deseja excluir ${plant.name} do catálogo?`,
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Excluir',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deleteCatalogPlant(plant.id);
+              setCatalog((items) => items.filter((item) => item.id !== plant.id));
+              setSelectedPlant(null);
+            } catch {
+              setCatalogError('Não foi possível excluir esta espécie.');
+            }
+          },
+        },
+      ],
+    );
   };
 
   const filteredPlants = useMemo(() => catalog.filter((plant) => {
@@ -66,85 +105,113 @@ export default function PlantGuideScreen({ navigation }) {
     return matchesQuery && matchesFilter;
   }), [catalog, filter, query]);
 
-  return (
-    <ScreenContainer>
+  const listHeader = (
+    <View>
       <View style={styles.header}>
         <Text accessibilityRole="header" style={styles.title}>Guia de cuidados</Text>
-        <Text style={styles.subtitle}>Encontre dicas simples para cada planta.</Text>
+        <Text style={styles.subtitle}>Descubra como cuidar melhor de cada espécie.</Text>
       </View>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="Restaurar catálogo padrão"
-        disabled={restoring}
-        onPress={handleRestoreCatalog}
-        style={({ pressed }) => [styles.restoreButton, pressed && styles.pressed]}
-      >
-        <MaterialCommunityIcons name="backup-restore" size={20} color="#2F6B45" />
-        <Text style={styles.restoreText}>{restoring ? 'Restaurando...' : 'Restaurar catálogo padrão'}</Text>
-      </Pressable>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="Cadastrar nova espécie"
-        onPress={() => navigation.navigate('Cadastrar espécie')}
-        style={({ pressed }) => [styles.addSpecies, pressed && styles.pressed]}
-      >
-        <MaterialCommunityIcons name="plus" size={20} color="#FFFFFF" />
-        <Text style={styles.addSpeciesText}>Cadastrar nova espécie</Text>
-      </Pressable>
-      {!!catalogError && <Text accessibilityRole="alert" style={styles.error}>{catalogError}</Text>}
-      <TextInput
-        accessibilityLabel="Pesquisar espécie no guia"
-        onChangeText={setQuery}
-        placeholder="Pesquisar espécie..."
-        placeholderTextColor="#8A9B90"
-        style={styles.search}
-        value={query}
-      />
-      <View accessibilityLabel="Filtros do catálogo" style={styles.filters}>
-        {filters.map((item) => (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityState={{ selected: filter === item.id }}
-            key={item.id}
-            onPress={() => setFilter(item.id)}
-            style={[styles.chip, filter === item.id && styles.chipActive]}
-          >
-            <Text style={[styles.chipText, filter === item.id && styles.chipTextActive]}>{item.label}</Text>
-          </Pressable>
-        ))}
+
+      <View style={styles.searchWrap}>
+        <SearchBar
+          accessibilityLabel="Pesquisar espécie no guia"
+          onChangeText={setQuery}
+          placeholder="Pesquisar espécie..."
+          value={query}
+        />
       </View>
-      {loading ? (
-        <Text style={styles.empty}>Carregando catálogo...</Text>
-      ) : <FlatList
-        contentContainerStyle={styles.list}
-        data={filteredPlants}
+
+      <FlatList
+        contentContainerStyle={styles.filters}
+        data={filters}
+        horizontal
         keyExtractor={(item) => item.id}
-        ListEmptyComponent={<Text style={styles.empty}>Nenhuma espécie encontrada.</Text>}
         renderItem={({ item }) => (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={`Abrir cuidados de ${item.name}`}
-            onPress={() => setSelectedPlant(item)}
-            style={({ pressed }) => [styles.plantRow, pressed && styles.pressed]}
-          >
-            <View style={styles.plantIcon}><MaterialCommunityIcons name={item.icon} size={28} color="#2F6B45" /></View>
-            <View style={styles.plantCopy}>
-              <Text style={styles.plantName}>{item.name}</Text>
-              <Text style={styles.plantMeta}>{formatDisplayValue(item.category)} · {item.environmentLabel || formatDisplayValue(item.environment)}</Text>
-              <Text style={styles.plantMeta}>Rega a cada {item.wateringIntervalDays} dias</Text>
-            </View>
-            <MaterialCommunityIcons name="chevron-right" size={23} color="#8A9B90" />
-          </Pressable>
+          <FilterChip
+            label={item.label}
+            onPress={() => setFilter(item.id)}
+            selected={filter === item.id}
+          />
         )}
-      />}
+        showsHorizontalScrollIndicator={false}
+      />
+
+      <View style={styles.actions}>
+        <Pressable
+          accessibilityHint="Abre o cadastro de uma espécie personalizada"
+          accessibilityLabel="Cadastrar nova espécie"
+          accessibilityRole="button"
+          onPress={() => navigation.navigate('Cadastrar espécie')}
+          style={({ pressed }) => [styles.addSpecies, pressed && styles.pressed]}
+        >
+          <MaterialCommunityIcons accessible={false} name="plus" size={20} color={colors.surface} />
+          <Text style={styles.addSpeciesText}>Cadastrar nova espécie</Text>
+        </Pressable>
+        <Pressable
+          accessibilityLabel="Restaurar catálogo padrão"
+          accessibilityRole="button"
+          disabled={restoring}
+          onPress={handleRestoreCatalog}
+          style={({ pressed }) => [styles.restoreButton, pressed && styles.pressed]}
+        >
+          <MaterialCommunityIcons accessible={false} name="backup-restore" size={17} color={colors.muted} />
+          <Text style={styles.restoreText}>{restoring ? 'Restaurando...' : 'Restaurar padrão'}</Text>
+        </Pressable>
+      </View>
+      {!!catalogError && <Text accessibilityRole="alert" style={styles.error}>{catalogError}</Text>}
+    </View>
+  );
+
+  return (
+    <ScreenContainer>
+      {loading ? (
+        <Text style={styles.loading}>Carregando catálogo...</Text>
+      ) : (
+        <FlatList
+          ListHeaderComponent={listHeader}
+          ListEmptyComponent={(
+            <View style={styles.emptyState}>
+              <MaterialCommunityIcons accessible={false} name="leaf-off" size={44} color={colors.muted} />
+              <Text style={styles.emptyTitle}>Nenhuma espécie encontrada.</Text>
+              <Text style={styles.emptyText}>Experimente outro nome ou ajuste os filtros.</Text>
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => navigation.navigate('Cadastrar espécie')}
+                style={styles.emptyButton}
+              >
+                <Text style={styles.emptyButtonText}>Cadastrar espécie personalizada</Text>
+              </Pressable>
+            </View>
+          )}
+          columnWrapperStyle={styles.catalogRow}
+          contentContainerStyle={styles.catalogList}
+          data={filteredPlants}
+          keyExtractor={(item) => item.id}
+          numColumns={2}
+          renderItem={({ item }) => (
+            <PlantCatalogCard
+              onPress={() => setSelectedPlant(item)}
+              plant={item}
+            />
+          )}
+        />
+      )}
+
       <Modal animationType="slide" onRequestClose={() => setSelectedPlant(null)} visible={!!selectedPlant}>
         {selectedPlant && (
           <ScreenContainer>
-            <View style={styles.modalContent}>
-              <Pressable accessibilityRole="button" accessibilityLabel="Fechar detalhes" onPress={() => setSelectedPlant(null)} style={styles.close}>
-                <MaterialCommunityIcons name="close" size={24} color="#183B25" />
+            <ScrollView contentContainerStyle={styles.modalContent}>
+              <Pressable
+                accessibilityLabel="Fechar detalhes"
+                accessibilityRole="button"
+                onPress={() => setSelectedPlant(null)}
+                style={styles.close}
+              >
+                <MaterialCommunityIcons accessible={false} name="close" size={24} color={colors.primaryDark} />
               </Pressable>
-              <View style={styles.modalIcon}><MaterialCommunityIcons name={selectedPlant.icon} size={54} color="#2F6B45" /></View>
+              <View style={styles.modalIcon}>
+                <MaterialCommunityIcons accessible={false} name={selectedPlant.icon || 'sprout'} size={54} color={colors.primary} />
+              </View>
               <Text accessibilityRole="header" style={styles.modalTitle}>{selectedPlant.name}</Text>
               <Text style={styles.modalCategory}>{formatDisplayValue(selectedPlant.category)}</Text>
               <PlantCareCard {...selectedPlant} />
@@ -174,22 +241,14 @@ export default function PlantGuideScreen({ navigation }) {
                   </Pressable>
                   <Pressable
                     accessibilityRole="button"
-                    onPress={async () => {
-                      try {
-                        await deleteCatalogPlant(selectedPlant.id);
-                        setCatalog((items) => items.filter((item) => item.id !== selectedPlant.id));
-                        setSelectedPlant(null);
-                      } catch {
-                        setCatalogError('Não foi possível excluir esta espécie.');
-                      }
-                    }}
+                    onPress={() => handleDelete(selectedPlant)}
                     style={styles.deleteSpecies}
                   >
                     <Text style={styles.deleteSpeciesText}>Excluir</Text>
                   </Pressable>
                 </View>
               )}
-            </View>
+            </ScrollView>
           </ScreenContainer>
         )}
       </Modal>
@@ -198,40 +257,38 @@ export default function PlantGuideScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  header: { paddingHorizontal: 24, paddingTop: 20 },
-  title: { color: '#183B25', fontSize: 28, fontWeight: '800' },
-  subtitle: { color: '#718378', fontSize: 15, marginTop: 7 },
-  restoreButton: { alignItems: 'center', alignSelf: 'flex-start', flexDirection: 'row', marginLeft: 20, marginTop: 14, padding: 5 },
-  restoreText: { color: '#2F6B45', fontSize: 13, fontWeight: '700', marginLeft: 7 },
-  addSpecies: { alignItems: 'center', alignSelf: 'flex-start', backgroundColor: '#2F6B45', borderRadius: 12, flexDirection: 'row', marginLeft: 20, marginTop: 10, paddingHorizontal: 13, paddingVertical: 10 },
-  addSpeciesText: { color: '#FFFFFF', fontSize: 13, fontWeight: '800', marginLeft: 6 },
-  error: { color: '#A33A3A', fontSize: 13, marginHorizontal: 20, marginTop: 8 },
-  search: { backgroundColor: '#FFFFFF', borderColor: '#D8E5D9', borderRadius: 14, borderWidth: 1, color: '#183B25', fontSize: 16, margin: 20, marginBottom: 12, padding: 15 },
-  filters: { flexDirection: 'row', gap: 8, paddingHorizontal: 20 },
-  chip: { borderColor: '#D8E5D9', borderRadius: 20, borderWidth: 1, paddingHorizontal: 15, paddingVertical: 10 },
-  chipActive: { backgroundColor: '#2F6B45', borderColor: '#2F6B45' },
-  chipText: { color: '#52665A', fontSize: 14, fontWeight: '600' },
-  chipTextActive: { color: '#FFFFFF' },
-  list: { padding: 20, paddingTop: 16 },
-  plantRow: { alignItems: 'center', backgroundColor: '#FFFFFF', borderRadius: 17, flexDirection: 'row', marginBottom: 10, minHeight: 82, padding: 14 },
-  plantIcon: { alignItems: 'center', backgroundColor: '#E4F1E5', borderRadius: 14, height: 54, justifyContent: 'center', width: 54 },
-  plantCopy: { flex: 1, marginLeft: 13 },
-  plantName: { color: '#183B25', fontSize: 17, fontWeight: '800' },
-  plantMeta: { color: '#718378', fontSize: 13, marginTop: 4, textTransform: 'capitalize' },
-  empty: { color: '#718378', fontSize: 16, padding: 30, textAlign: 'center' },
+  header: { paddingHorizontal: spacing.lg, paddingTop: spacing.md },
+  title: { color: colors.primaryDark, fontSize: 28, fontWeight: '800' },
+  subtitle: { color: colors.muted, fontSize: 15, lineHeight: 21, marginTop: spacing.xxs },
+  searchWrap: { marginHorizontal: spacing.lg, marginTop: spacing.lg },
+  filters: { gap: spacing.xsm, paddingBottom: spacing.sm, paddingHorizontal: spacing.lg, paddingTop: spacing.sm },
+  actions: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: spacing.lg, paddingVertical: spacing.sm },
+  addSpecies: { alignItems: 'center', backgroundColor: colors.primary, borderRadius: radii.sm, flexDirection: 'row', minHeight: 48, paddingHorizontal: spacing.md },
+  addSpeciesText: { color: colors.surface, fontSize: 13, fontWeight: '800', marginLeft: spacing.xsm },
+  restoreButton: { alignItems: 'center', flexDirection: 'row', minHeight: 44, paddingHorizontal: spacing.xsm },
+  restoreText: { color: colors.muted, fontSize: 12, fontWeight: '700', marginLeft: spacing.xxs },
+  error: { color: colors.danger, fontSize: 13, marginHorizontal: spacing.lg, marginTop: spacing.xsm },
+  catalogList: { paddingBottom: 36, paddingHorizontal: spacing.sm },
+  catalogRow: { marginHorizontal: spacing.xsm },
+  loading: { color: colors.muted, fontSize: 16, padding: 30, textAlign: 'center' },
+  emptyState: { alignItems: 'center', padding: spacing.xl },
+  emptyTitle: { color: colors.text, fontSize: 17, fontWeight: '800', marginTop: spacing.sm },
+  emptyText: { color: colors.muted, fontSize: 14, marginTop: spacing.xxs, textAlign: 'center' },
+  emptyButton: { borderColor: colors.primary, borderRadius: radii.sm, borderWidth: 1, marginTop: spacing.lg, paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
+  emptyButtonText: { color: colors.primary, fontSize: 14, fontWeight: '800' },
   pressed: { opacity: 0.75 },
-  modalContent: { flex: 1, padding: 24 },
-  close: { alignItems: 'center', alignSelf: 'flex-end', backgroundColor: '#E4F1E5', borderRadius: 24, height: 48, justifyContent: 'center', width: 48 },
-  modalIcon: { alignItems: 'center', alignSelf: 'center', backgroundColor: '#E4F1E5', borderRadius: 45, height: 90, justifyContent: 'center', marginTop: 15, width: 90 },
-  modalTitle: { color: '#183B25', fontSize: 28, fontWeight: '800', marginTop: 18, textAlign: 'center' },
-  modalCategory: { color: '#718378', fontSize: 15, marginTop: 5, textAlign: 'center' },
-  tipTitle: { color: '#183B25', fontSize: 18, fontWeight: '800', marginTop: 24 },
-  tipText: { color: '#52665A', fontSize: 15, lineHeight: 22, marginTop: 8 },
-  useButton: { backgroundColor: '#2F6B45', borderRadius: 14, marginTop: 24, minHeight: 56, padding: 17 },
-  useButtonText: { color: '#FFFFFF', fontSize: 16, fontWeight: '800', textAlign: 'center' },
-  manageActions: { flexDirection: 'row', gap: 10, marginTop: 12 },
-  editSpecies: { borderColor: '#2F6B45', borderRadius: 12, borderWidth: 1, flex: 1, padding: 14 },
-  editSpeciesText: { color: '#2F6B45', fontWeight: '800', textAlign: 'center' },
-  deleteSpecies: { borderColor: '#F0D4D0', borderRadius: 12, borderWidth: 1, padding: 14 },
-  deleteSpeciesText: { color: '#A33A3A', fontWeight: '800' },
+  modalContent: { flex: 1, padding: spacing.lg },
+  close: { alignItems: 'center', alignSelf: 'flex-end', backgroundColor: colors.primaryLight, borderRadius: 24, height: 48, justifyContent: 'center', width: 48 },
+  modalIcon: { alignItems: 'center', alignSelf: 'center', backgroundColor: colors.primaryLight, borderRadius: 45, height: 90, justifyContent: 'center', marginTop: spacing.xsm, width: 90 },
+  modalTitle: { color: colors.text, fontSize: 28, fontWeight: '800', marginTop: spacing.md, textAlign: 'center' },
+  modalCategory: { color: colors.muted, fontSize: 15, marginTop: spacing.xxs, textAlign: 'center', textTransform: 'capitalize' },
+  tipTitle: { color: colors.text, fontSize: 18, fontWeight: '800', marginTop: spacing.lg },
+  tipText: { color: '#52665A', fontSize: 15, lineHeight: 22, marginTop: spacing.xsm },
+  useButton: { backgroundColor: colors.primary, borderRadius: radii.md, marginTop: spacing.lg, minHeight: 56, justifyContent: 'center', padding: spacing.md },
+  useButtonText: { color: colors.surface, fontSize: 16, fontWeight: '800', textAlign: 'center' },
+  manageActions: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm },
+  editSpecies: { borderColor: colors.primary, borderRadius: radii.sm, borderWidth: 1, flex: 1, padding: spacing.md },
+  editSpeciesText: { color: colors.primary, fontWeight: '800', textAlign: 'center' },
+  deleteSpecies: { borderColor: '#F0D4D0', borderRadius: radii.sm, borderWidth: 1, padding: spacing.md },
+  deleteSpeciesText: { color: colors.danger, fontWeight: '800' },
 });
