@@ -1,16 +1,25 @@
 import { initializeApp } from 'firebase/app';
 import { initializeFirestore } from 'firebase/firestore';
 
-export const firebaseConfig = {
-  apiKey: 'AIzaSyB8X_3zibbJpjlmboSq2NHmrkdlVC3_MLc',
-  authDomain: 'broto-app-287bc.firebaseapp.com',
-  projectId: 'broto-app-287bc',
-  storageBucket: 'broto-app-287bc.firebasestorage.app',
-  messagingSenderId: '1004341379472',
-  appId: '1:1004341379472:web:7fe6e2d1886c44a7423315',
+const config = {
+  apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID,
 };
 
-const app = initializeApp(firebaseConfig);
+const missingConfig = Object.entries(config)
+  .filter(([, value]) => !value)
+  .map(([key]) => key);
+
+if (missingConfig.length > 0) {
+  throw new Error(`Configure as variáveis EXPO_PUBLIC_FIREBASE_* no .env: ${missingConfig.join(', ')}`);
+}
+
+export const firebaseConfig = config;
+export const app = initializeApp(firebaseConfig);
 
 export const db = initializeFirestore(app, {
   experimentalAutoDetectLongPolling: true,

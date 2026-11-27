@@ -12,6 +12,7 @@ import {
 } from "react-native";
 
 import ScreenContainer from "../components/ScreenContainer";
+import { useAuth } from "../context/AuthContext";
 import {
   createCatalogPlant,
   updateCatalogPlant,
@@ -19,6 +20,7 @@ import {
 import { formatDisplayValue } from "../utils/display";
 
 export default function CatalogSpeciesScreen({ navigation, route }) {
+  const { user } = useAuth();
   const existingPlant = route.params?.catalogPlant;
   const [name, setName] = useState(existingPlant?.name ?? "");
   const [scientificName, setScientificName] = useState(
@@ -80,7 +82,7 @@ export default function CatalogSpeciesScreen({ navigation, route }) {
       };
       const savedPlant = existingPlant
         ? await updateCatalogPlant(existingPlant.id, data)
-        : await createCatalogPlant(data);
+        : await createCatalogPlant(data, user.uid);
       Alert.alert(
         "Catálogo atualizado",
         `${data.name} foi salva com sucesso.`,

@@ -7,10 +7,12 @@ import {
   updatePlant as updatePlantService,
   updateWateringDate as updateWateringDateService,
 } from '../services/plantService';
+import { useAuth } from './AuthContext';
 
 const PlantsContext = createContext(null);
 
 export function PlantsProvider({ children }) {
+  const { user } = useAuth();
   const [plants, setPlants] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -32,7 +34,7 @@ export function PlantsProvider({ children }) {
 
     if (!silent) setLoading(true);
     setError('');
-    const request = getPlants()
+    const request = getPlants(user.uid)
       .then((loadedPlants) => {
         setPlants(loadedPlants);
         plantsRef.current = loadedPlants;
@@ -50,7 +52,7 @@ export function PlantsProvider({ children }) {
 
     loadingRequestRef.current = request;
     return request;
-  }, []);
+  }, [user.uid]);
 
   useEffect(() => {
     // This effect synchronizes the global store with the remote Firestore source.
@@ -62,7 +64,7 @@ export function PlantsProvider({ children }) {
     setOperationLoading(true);
     setError('');
     try {
-      const createdPlant = await createPlantService(plantData);
+      const createdPlant = await createPlantService(plantData, user.uid);
       setPlants((currentPlants) => {
         const nextPlants = [...currentPlants, createdPlant];
         plantsRef.current = nextPlants;
@@ -75,13 +77,13 @@ export function PlantsProvider({ children }) {
     } finally {
       setOperationLoading(false);
     }
-  }, []);
+  }, [user.uid]);
 
   const updatePlant = useCallback(async (plantId, plantData) => {
     setOperationLoading(true);
     setError('');
     try {
-      const updatedPlant = await updatePlantService(plantId, plantData);
+      const updatedPlant = await updatePlantService(plantId, plantData, user.uid);
       setPlants((currentPlants) => {
         const nextPlants = currentPlants.map((plant) => (
           plant.id === plantId ? { ...plant, ...updatedPlant } : plant
@@ -96,7 +98,7 @@ export function PlantsProvider({ children }) {
     } finally {
       setOperationLoading(false);
     }
-  }, []);
+  }, [user.uid]);
 
   const updateWateringDate = useCallback(async (plantId) => {
     setOperationLoading(true);
@@ -104,7 +106,7 @@ export function PlantsProvider({ children }) {
     setError('');
     try {
       const currentPlant = plantsRef.current.find((plant) => plant.id === plantId);
-      const result = await updateWateringDateService(plantId, currentPlant?.wateringFrequency);
+      const result = await updateWateringDateService(plantId, currentPlant?.wateringFrequency, user.uid);
       setPlants((currentPlants) => {
         const nextPlants = currentPlants.map((plant) => (
           plant.id === plantId ? { ...plant, ...result } : plant
@@ -120,13 +122,13 @@ export function PlantsProvider({ children }) {
       setOperationLoading(false);
       setOperationPlantId(null);
     }
-  }, []);
+  }, [user.uid]);
 
   const deletePlant = useCallback(async (plantId) => {
     setOperationLoading(true);
     setError('');
     try {
-      await deletePlantService(plantId);
+      await deletePlantService(plantId, user.uid);
       setPlants((currentPlants) => {
         const nextPlants = currentPlants.filter((plant) => plant.id !== plantId);
         plantsRef.current = nextPlants;
@@ -138,7 +140,7 @@ export function PlantsProvider({ children }) {
     } finally {
       setOperationLoading(false);
     }
-  }, []);
+  }, [user.uid]);
 
   const value = useMemo(
     () => ({
