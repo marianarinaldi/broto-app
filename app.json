@@ -11,13 +11,13 @@
       "bundleIdentifier": "com.anonymous.brotoapp"
     },
     "android": {
+      "package": "br.com.marianarinaldi.broto",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./src/assets/android-icon-foreground.png",
         "backgroundImage": "./src/assets/android-icon-background.png",
         "monochromeImage": "./src/assets/android-icon-monochrome.png"
-      },
-      "package": "com.anonymous.brotoapp"
+      }
     },
     "web": {
       "favicon": "./src/assets/favicon.png"
@@ -31,7 +31,8 @@
           "cameraPermission": "Permitir o uso da câmera para fotografar suas plantas.",
           "photosPermission": "Permitir o acesso às fotos para adicionar imagens das plantas."
         }
-      ]
+      ],
+      "expo-status-bar"
     ]
   }
 }

@@ -1,5 +1,5 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert, FlatList, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import FilterChip from '../components/FilterChip';
@@ -8,6 +8,7 @@ import PlantCatalogCard from '../components/PlantCatalogCard';
 import SearchBar from '../components/SearchBar';
 import ScreenContainer from '../components/ScreenContainer';
 import { PLANT_CATALOG_SEED } from '../constants/plantCatalogData';
+import { useAuth } from '../context/AuthContext';
 import { colors, radii, spacing } from '../constants/theme';
 import { deleteCatalogPlant, getPlantCatalog, restorePlantCatalog } from '../services/catalogService';
 import { formatDisplayValue } from '../utils/display';
@@ -20,6 +21,7 @@ const filters = [
 ];
 
 export default function PlantGuideScreen({ navigation }) {
+  const { user } = useAuth();
   const [catalog, setCatalog] = useState(PLANT_CATALOG_SEED);
   const [loading, setLoading] = useState(true);
   const [restoring, setRestoring] = useState(false);
@@ -28,23 +30,23 @@ export default function PlantGuideScreen({ navigation }) {
   const [filter, setFilter] = useState('all');
   const [selectedPlant, setSelectedPlant] = useState(null);
 
-  const loadCatalog = async () => {
+  const loadCatalog = useCallback(async () => {
     setLoading(true);
     setCatalogError('');
     try {
-      setCatalog(await getPlantCatalog());
+      setCatalog(await getPlantCatalog(user.uid));
     } catch {
       setCatalogError('Não foi possível carregar o catálogo agora.');
     } finally {
       setLoading(false);
     }
-  };
+  }, [user.uid]);
 
   useEffect(() => {
     // This effect synchronizes the screen with the remote Firestore catalog.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     loadCatalog();
-  }, []);
+  }, [loadCatalog]);
 
   const handleRestoreCatalog = () => {
     Alert.alert(
@@ -58,7 +60,7 @@ export default function PlantGuideScreen({ navigation }) {
             setRestoring(true);
             setCatalogError('');
             try {
-              setCatalog(await restorePlantCatalog());
+              setCatalog(await restorePlantCatalog(user.uid));
             } catch {
               setCatalogError('Não foi possível restaurar o catálogo. Verifique sua conexão e tente novamente.');
             } finally {

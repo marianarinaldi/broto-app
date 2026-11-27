@@ -2,16 +2,30 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // O app acadêmico ainda não possui login. Estas regras permitem a
-    // demonstração do CRUD com o projeto Firebase de teste.
-    // Antes de publicar na Google Play, habilite Firebase Auth e substitua
-    // estas regras por validações baseadas em request.auth.uid.
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function ownsResource() {
+      return signedIn() && resource.data.ownerId == request.auth.uid;
+    }
+
     match /plants/{plantId} {
-      allow read, write: if true;
+      allow read, delete: if ownsResource();
+      allow create: if signedIn()
+        && request.resource.data.ownerId == request.auth.uid;
+      allow update: if ownsResource()
+        && request.resource.data.ownerId == resource.data.ownerId;
     }
 
     match /plant_catalog/{plantId} {
-      allow read, write: if true;
+      allow read, delete: if ownsResource();
+      allow create: if signedIn()
+        && request.resource.data.ownerId == request.auth.uid
+        && request.resource.data.source == 'user';
+      allow update: if ownsResource()
+        && request.resource.data.ownerId == resource.data.ownerId
+        && request.resource.data.source == 'user';
     }
   }
 }
