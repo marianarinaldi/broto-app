@@ -10,6 +10,7 @@ import LoadingState from '../components/LoadingState';
 import PlantCard from '../components/PlantCard';
 import SearchBar from '../components/SearchBar';
 import ScreenContainer from '../components/ScreenContainer';
+import { useAuth } from '../context/AuthContext';
 import { usePlants } from '../context/PlantsContext';
 import { colors, radii, spacing } from '../constants/theme';
 import { getWateringStatus } from '../utils/watering';
@@ -23,6 +24,7 @@ const plantFilters = [
 
 export default function MyPlantsScreen({ navigation }) {
   const { plants, loading, error, loadPlants, operationPlantId, updateWateringDate } = usePlants();
+  const { signOut } = useAuth();
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState('all');
 
@@ -60,15 +62,35 @@ export default function MyPlantsScreen({ navigation }) {
           <Text accessibilityRole="header" style={styles.title}>Minhas plantas</Text>
           <Text style={styles.subtitle}>Sua coleção • {plants.length} plantas cadastradas</Text>
         </View>
-        <Pressable
-          accessibilityHint="Abre o formulário para cadastrar uma nova planta"
-          accessibilityLabel="Adicionar planta"
-          accessibilityRole="button"
-          onPress={() => navigation.navigate('Adicionar planta')}
-          style={({ pressed }) => [styles.addButton, pressed && styles.pressed]}
-        >
-          <MaterialCommunityIcons accessible={false} name="plus" size={26} color={colors.surface} />
-        </Pressable>
+        <View style={styles.headerActions}>
+          <Pressable
+            accessibilityLabel="Sair da conta"
+            accessibilityRole="button"
+            onPress={() => {
+              Alert.alert('Sair da conta', 'Deseja encerrar sua sessão?', [
+                { text: 'Cancelar', style: 'cancel' },
+                {
+                  text: 'Sair',
+                  onPress: () => signOut().catch(() => {
+                    Alert.alert('Erro', 'Não foi possível encerrar a sessão. Tente novamente.');
+                  }),
+                },
+              ]);
+            }}
+            style={({ pressed }) => [styles.signOutButton, pressed && styles.pressed]}
+          >
+            <MaterialCommunityIcons accessible={false} name="logout" size={20} color={colors.primary} />
+          </Pressable>
+          <Pressable
+            accessibilityHint="Abre o formulário para cadastrar uma nova planta"
+            accessibilityLabel="Adicionar planta"
+            accessibilityRole="button"
+            onPress={() => navigation.navigate('Adicionar planta')}
+            style={({ pressed }) => [styles.addButton, pressed && styles.pressed]}
+          >
+            <MaterialCommunityIcons accessible={false} name="plus" size={26} color={colors.surface} />
+          </Pressable>
+        </View>
       </View>
 
       <View style={styles.searchWrap}>
@@ -148,6 +170,8 @@ const styles = StyleSheet.create({
   content: { paddingBottom: 36, paddingHorizontal: spacing.lg, paddingTop: spacing.md },
   heading: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' },
   headingCopy: { flex: 1, paddingRight: spacing.md },
+  headerActions: { alignItems: 'center', flexDirection: 'row', gap: spacing.xsm },
+  signOutButton: { alignItems: 'center', borderColor: colors.primary, borderRadius: radii.md, borderWidth: 1, height: 48, justifyContent: 'center', width: 48 },
   title: { color: colors.primaryDark, fontSize: 28, fontWeight: '800' },
   subtitle: { color: colors.muted, fontSize: 14, marginTop: spacing.xxs },
   addButton: {

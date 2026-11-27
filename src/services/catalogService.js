@@ -1,6 +1,15 @@
-import { collection, deleteDoc, doc, getDocs, setDoc, updateDoc } from 'firebase/firestore';
+import {
+  collection,
+  deleteDoc,
+  doc,
+  getDocs,
+  query,
+  setDoc,
+  updateDoc,
+  where,
+} from 'firebase/firestore';
 
-import { db, firebaseConfig } from '../config/firebaseConfig';
+import { db } from '../config/firebaseConfig';
 import { PLANT_CATALOG_SEED } from '../constants/plantCatalogData';
 
 const CATALOG_COLLECTION = 'plant_catalog';
@@ -28,51 +37,35 @@ function getCatalogErrorMessage(error, fallback) {
   return fallback;
 }
 
-const toCatalogItem = (snapshot) => ({
-  ...snapshot.data(),
-  id: snapshot.id,
-});
-
-export async function seedPlantCatalog() {
-  const catalogRef = collection(db, CATALOG_COLLECTION);
-  await Promise.all(
-    PLANT_CATALOG_SEED.map((plant) => withTimeout(
-      setDoc(doc(catalogRef, plant.id), plant, { merge: true }),
-      'A restauração do catálogo demorou mais que o esperado.',
-    )),
-  );
-  return PLANT_CATALOG_SEED;
-}
-
-export async function getPlantCatalog() {
+export async function getPlantCatalog(userId) {
   try {
     const snapshot = await withTimeout(
-      getDocs(collection(db, CATALOG_COLLECTION)),
+      getDocs(query(collection(db, CATALOG_COLLECTION), where('ownerId', '==', userId))),
       'O carregamento do catálogo demorou mais que o esperado.',
     );
-    if (snapshot.empty) {
-      seedPlantCatalog().catch((error) => {
-        console.warn('Não foi possível fazer o seed do catálogo no Firestore:', error);
-      });
-      return PLANT_CATALOG_SEED;
-    }
-
-    return snapshot.docs.map(toCatalogItem);
+    const userCatalog = snapshot.docs.map((catalogDocument) => ({
+      ...catalogDocument.data(),
+      id: catalogDocument.id,
+    }));
+    return [...PLANT_CATALOG_SEED, ...userCatalog];
   } catch (error) {
     console.warn('Catálogo remoto indisponível; usando catálogo local:', error);
     return PLANT_CATALOG_SEED;
   }
 }
 
-export async function restorePlantCatalog() {
-  await seedPlantCatalog();
-  return PLANT_CATALOG_SEED;
+export async function restorePlantCatalog(userId) {
+  return getPlantCatalog(userId);
 }
 
-export async function createCatalogPlant(plantData) {
+export async function createCatalogPlant(plantData, userId) {
+  if (!userId) {
+    throw new Error('É necessário entrar na conta para cadastrar uma espécie.');
+  }
   const document = {
     ...plantData,
     source: 'user',
+    ownerId: userId,
     createdAt: new Date().toISOString(),
   };
   const id = `user-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
@@ -85,36 +78,7 @@ export async function createCatalogPlant(plantData) {
     );
     return { id, ...document };
   } catch (error) {
-    if (error?.code === 'permission-denied') {
-      throw new Error(getCatalogErrorMessage(error, 'Não foi possível cadastrar a espécie.'));
-    }
-
-    const fields = {};
-    Object.entries(document).forEach(([key, value]) => {
-      if (typeof value === 'number') fields[key] = { integerValue: String(value) };
-      else if (typeof value === 'boolean') fields[key] = { booleanValue: value };
-      else if (Array.isArray(value)) fields[key] = { arrayValue: { values: value.map((item) => ({ stringValue: String(item) })) } };
-      else if (value !== null && value !== undefined) fields[key] = { stringValue: String(value) };
-    });
-
-    const response = await withTimeout(
-      fetch(
-        `https://firestore.googleapis.com/v1/projects/${firebaseConfig.projectId}/databases/(default)/documents/${CATALOG_COLLECTION}?documentId=${encodeURIComponent(id)}&key=${encodeURIComponent(firebaseConfig.apiKey)}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ fields }),
-        },
-      ),
-      'A conexão com o catálogo demorou mais que o esperado.',
-    );
-
-    if (!response.ok) {
-      const responseText = await response.text();
-      throw new Error(getCatalogErrorMessage(error, `Não foi possível cadastrar a espécie: ${responseText || response.status}`));
-    }
-
-    return { id, ...document };
+    throw new Error(getCatalogErrorMessage(error, 'Não foi possível cadastrar a espécie.'));
   }
 }
 

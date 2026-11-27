@@ -35,7 +35,8 @@ Este projeto foi desenvolvido para a disciplina de **Dispositivos Móveis**.
 - React Native com Expo SDK 58.
 - React Navigation com Native Stack e Bottom Tabs.
 - Context API para estado global.
-- Firebase Firestore para persistência NoSQL.
+- Firebase Authentication com contas por e-mail e senha.
+- Firebase Firestore com regras de acesso por proprietário.
 - Expo Image Picker para câmera e galeria.
 - Expo Notifications para lembretes locais.
 - Expo Haptics para feedback tátil.
@@ -82,8 +83,9 @@ Este projeto foi desenvolvido para a disciplina de **Dispositivos Móveis**.
 
 ### Firebase e persistência
 
-- Firestore para leitura, criação, edição e remoção de plantas.
-- Firestore para o catálogo de espécies.
+- Firebase Authentication com sessão persistida no dispositivo.
+- Firestore para leitura, criação, edição e remoção das plantas do usuário.
+- Catálogo padrão local e espécies personalizadas privadas no Firestore.
 - CRUD de espécies personalizadas.
 - Atualização de `lastWateredDate`, `nextCareDate` e `nextCare` após a rega.
 
@@ -155,16 +157,24 @@ java -version
 ## Configuração do Firebase
 
 1. Crie ou acesse um projeto no [Firebase Console](https://console.firebase.google.com/).
-2. Crie um aplicativo Web no projeto.
-3. Ative o **Cloud Firestore**.
-4. Copie a configuração do aplicativo Web.
-5. Atualize os valores em
-   [`src/config/firebaseConfig.js`](./src/config/firebaseConfig.js).
+2. Crie um aplicativo Web no projeto e ative o **Cloud Firestore**.
+3. Em **Authentication > Sign-in method**, habilite **E-mail/senha**.
+4. Copie `.env.example` para `.env` e preencha as variáveis com a configuração
+   do aplicativo Web no Firebase Console.
+
+O arquivo `.env` é ignorado pelo Git. As variáveis `EXPO_PUBLIC_*` são incluídas
+no aplicativo e podem ser inspecionadas; elas organizam a configuração, mas não
+são segredos nem substituem as regras do Firestore. Restrinja a chave de API no
+Google Cloud Console aos serviços e aplicativos necessários.
 
 O aplicativo utiliza as coleções:
 
-- `plants`: plantas cadastradas pelo usuário.
-- `plant_catalog`: catálogo de espécies e espécies personalizadas.
+- `plants`: plantas com o campo `ownerId` igual ao UID da conta proprietária.
+- `plant_catalog`: espécies personalizadas, também vinculadas a `ownerId`.
+
+O catálogo padrão fica em
+[`src/constants/plantCatalogData.js`](./src/constants/plantCatalogData.js) e
+não precisa de gravação pública no Firestore.
 
 ### Regras do Firestore
 
@@ -177,16 +187,33 @@ firebase use SEU_PROJECT_ID
 firebase deploy --only firestore:rules
 ```
 
-As regras atuais são destinadas à demonstração acadêmica. Antes de uma
-publicação comercial, implemente Firebase Authentication, associe cada
-documento a um `userId` e restrinja o acesso por usuário.
+As regras permitem acesso a plantas e espécies personalizadas somente quando
+`request.auth.uid` corresponde ao `ownerId` do documento. Faça backup dos dados
+antes de publicar as novas regras.
+
+#### Migração dos dados existentes
+
+Os documentos antigos foram criados sem `ownerId`. Depois de publicar as novas
+regras, eles não poderão ser lidos pelo aplicativo. Antes do deploy, exporte
+uma cópia do Firestore e atribua cada documento ao UID verificado do proprietário
+usando uma ferramenta administrativa confiável, como o Firebase Admin SDK.
+Não atribua documentos automaticamente com base em e-mail ou em dados enviados
+pelo aplicativo. Se não for possível confirmar quem é o proprietário, mantenha
+o backup separado em vez de expor esses dados.
+
+Depois de habilitar a autenticação e migrar os documentos que tenham um
+proprietário confirmado, publique as regras. Teste com duas contas diferentes:
+cada uma deve listar, editar e excluir somente as próprias plantas e espécies.
+O identificador Android do aplicativo é `br.com.marianarinaldi.broto`; mudar
+esse identificador exige instalar o app como uma aplicação separada no aparelho.
 
 ## Catálogo de espécies
 
 O catálogo possui uma fonte local em
 [`src/constants/plantCatalogData.js`](./src/constants/plantCatalogData.js).
-Quando o Firestore está vazio, o aplicativo realiza o seed do catálogo padrão.
-Se o Firestore estiver indisponível, a fonte local é utilizada como fallback.
+O catálogo padrão não depende de seed nem de gravação no Firestore; as espécies
+personalizadas são carregadas da conta autenticada. Se o Firestore estiver
+indisponível, a fonte local continua disponível.
 
 O usuário pode:
 
@@ -234,10 +261,15 @@ das espécies criadas pelo usuário e restauração confirmada do catálogo padr
 Execute os comandos abaixo antes da entrega:
 
 ```bash
+npm audit
 npm run lint
 npm test -- --runInBand
 npx expo export --platform android
 ```
+
+As dependências transitivas vulneráveis de gRPC, glob e minimatch são fixadas
+em versões corrigidas por `overrides` no `package.json`. Reavalie esses
+overrides ao atualizar Expo, Firebase ou as ferramentas de teste.
 
 Os testes cobrem o componente de recomendações, os ícones de cuidados, o
 cálculo da próxima rega e a classificação dos status de cuidado.
@@ -252,7 +284,8 @@ O redesign também deve ser validado manualmente nos seguintes fluxos:
 - navegação para detalhes;
 - busca e filtros do catálogo;
 - cadastro e edição de espécie;
-- restauração do catálogo;
+- restauração do catálogo padrão;
+- cadastro/login, encerramento de sessão e isolamento de dados entre duas contas;
 - estados vazios e estados de erro.
 
 ## Screenshots e vídeo

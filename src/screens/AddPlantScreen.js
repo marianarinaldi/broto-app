@@ -20,6 +20,7 @@ import ScreenContainer from "../components/ScreenContainer";
 import PlantCareCard from "../components/PlantCareCard";
 import SpeciesSelector from "../components/SpeciesSelector";
 import plantCatalogData from "../constants/plantCatalogData";
+import { useAuth } from "../context/AuthContext";
 import { usePlants } from "../context/PlantsContext";
 import { schedulePlantReminder } from "../services/notificationService";
 import { getPlantCatalog } from "../services/catalogService";
@@ -29,6 +30,7 @@ export default function AddPlantScreen({ navigation, route }) {
   const plant = route.params?.plant;
   const catalogPlant = route.params?.catalogPlant;
   const returnToMyPlants = route.params?.returnToMyPlants === true;
+  const { user } = useAuth();
   const { createPlant, updatePlant, operationLoading } = usePlants();
   const defaultCareDate = new Date();
   defaultCareDate.setDate(defaultCareDate.getDate() + 1);
@@ -56,7 +58,7 @@ export default function AddPlantScreen({ navigation, route }) {
 
   const loadCatalog = useCallback(() => {
     let active = true;
-    getPlantCatalog().then((items) => {
+    getPlantCatalog(user.uid).then((items) => {
       if (active) setCatalogItems(items);
     }).catch(() => {
       // The local catalog remains available when the remote catalog is offline.
@@ -64,7 +66,7 @@ export default function AddPlantScreen({ navigation, route }) {
     return () => {
       active = false;
     };
-  }, []);
+  }, [user.uid]);
 
   useEffect(() => {
     loadCatalog();
